@@ -1,4 +1,4 @@
-git clone https://github.com/vinicius-moraisdesouza/CEEP.git<br>
+git clone https://github.com/alvs4/ALVS-4.git<br>
 py -3.13 -m venv ceep<br>
 .\ceep\Scripts\activate ou source ceep/Scripts/activate<br>
 pip install -r requirements.txt<br>
