@@ -1,0 +1,36 @@
+{% extends 'base4.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4"> 
+
+    <h2 class="mb-4 text-body-emphasis">Visualizar Matérias por Curso</h2>
+    
+    <div class="row">
+        {% for curso in cursos %}
+          <div class="col-lg-3 col-md-4 col-sm-6 mb-3"> 
+            
+            <a href="{% url 'listar_materias_por_curso' curso.id %}" 
+               class="btn btn-outline-secondary w-100 h-100 d-flex align-items-center justify-content-center py-4 text-body-emphasis" 
+               style="min-height: 100px;">
+                
+                {{ curso.nome }}
+            
+            </a>
+          </div>
+        {% empty %}
+          <div class="col-12">
+            <p class="text-body-secondary">Nenhum curso cadastrado.</p>
+            <p class="text-body-secondary">Você já rodou o comando de seed? Tente executar no terminal:</p>
+            <code class="d-block bg-body-tertiary p-2 rounded text-body-emphasis">python manage.py seed_turmas</code>
+          </div>
+        {% endfor %}
+    </div>
+    
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mt-4 d-flex align-items-center w-auto"> 
+        <i class="bi bi-arrow-left me-2"></i>
+        Voltar
+    </a>
+
+</div>
+{% endblock content %}

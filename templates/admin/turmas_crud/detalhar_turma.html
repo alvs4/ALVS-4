@@ -1,0 +1,40 @@
+{% extends 'base4.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4"> 
+
+    <h2 class="mb-4 text-body-emphasis">Alunos da Turma {{ turma }}</h2>
+
+    {% if alunos %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle shadow-sm">
+            <thead class="table-secondary text-body-emphasis">
+                <tr>
+                    <th class="coluna-aluno">Alunos</th>
+                    <th>Matrícula</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aluno in alunos %}
+                <tr>
+                    <td class="text-body-emphasis">{{ aluno.get_full_name }}</td>
+                    <td>{{ aluno.numero_matricula }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-body-emphasis">
+        Nenhum aluno cadastrado nesta turma.
+    </div>
+    {% endif %}
+
+    <a href="{% url 'listar_turmas' %}" class="btn btn-secondary mt-3 d-flex align-items-center w-auto">
+        <i class="bi bi-arrow-left me-2"></i>
+        Voltar
+    </a>
+
+</div> 
+{% endblock content %}

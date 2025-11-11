@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block styles %}
+{{ block.super }}
+<style>
+    /* === CSS para Edição In-loco === */
+    .inline-input {
+        background-color: transparent;
+        border: none;
+        /* Adaptável ao tema: usa cor de borda sutil do tema Bootstrap (Fallback para #ccc) */
+        border-bottom: 1px dashed var(--bs-border-color-subtle, #ccc); 
+        padding: 0 2px;
+        margin: 0;
+        font-family: inherit;
+        font-size: inherit;
+        color: inherit; /* Herdará a cor do texto circundante */
+        width: auto;
+        min-width: 100px;
+        display: inline;
+        line-height: inherit;
+    }
+    .inline-input:focus {
+        outline: none;
+        border-bottom: 1px solid var(--bs-primary); /* Usa a cor primária do tema */
+        /* CORREÇÃO: Fundo adaptável ao focar (opcional: manter um tom claro ou usar o fundo do tema) */
+        background-color: var(--bs-tertiary-bg); 
+    }
+    /* Estilo específico para datas */
+    .inline-input[type="date"] {
+        width: 130px;
+        border-bottom: 1px dashed var(--bs-border-color-subtle, #ccc);
+    }
+     /* Estilo específico para números */
+    .inline-input[type="number"] {
+        width: 60px;
+        text-align: center;
+        border-bottom: 1px dashed var(--bs-border-color-subtle, #ccc);
+    }
+
+    /* Estilo para erros de validação */
+    .inline-input.is-invalid {
+        border-bottom: 1px solid red !important;
+        background-color: var(--bs-danger-bg); /* Usa fundo adaptável para o erro */
+    }
+    .invalid-feedback-inline {
+        color: var(--bs-danger); /* Usa a cor de erro do tema */
+        font-size: 0.8em;
+        font-weight: bold;
+        margin-left: 5px;
+        display: inline;
+    }
+
+    /* Para o corpo do documento (Times New Roman) */
+    .document-body {
+      font-family: 'Times New Roman', Times, serif;
+      /* CORREÇÃO CHAVE: A cor do texto será herdada do .card-body. */
+      line-height: 1.6;
+      font-size: 12pt;
+    }
+    /* No Modo Claro (se o card for branco), forçamos o preto para manter o visual de documento */
+    /* Caso a base.html não defina o card-body como cor adaptável, isso garante o contraste */
+    .card-body, .card-body .document-body {
+        color: var(--bs-body-color); /* Cor padrão do tema */
+    }
+
+    /* Remove negrito de strong se dentro dele houver input */
+    .document-body strong:has(> .inline-input) {
+        font-weight: normal;
+    }
+
+    /* Personaliza listas ordenadas com type="a" */
+    ol[type="a"] {
+        counter-reset: item;
+        list-style-type: none;
+        padding-left: 2em;
+    }
+    ol[type="a"] li {
+        counter-increment: item;
+        position: relative;
+    }
+    ol[type="a"] li::before {
+        content: counter(item, lower-alpha) ") ";
+        position: absolute;
+        left: -1.5em;
+        font-weight: bold;
+    }
+
+    /* Rodapé do Documento */
+    .document-footer-info {
+        /* CORREÇÃO: Borda adaptável */
+        border-top: 1px solid var(--bs-border-color-subtle, #ccc); 
+        padding-top: 10px;
+        margin-top: 3rem;
+        font-size: 12pt;
+        text-align: center;
+        font-family: 'Times New Roman', Times, serif;
+        /* CORREÇÃO: Cor do texto principal será herdada do card-body */
+    }
+    /* Estilo do bloco de assinaturas manuais */
+    .signature-block .text-dark {
+        /* CORREÇÃO: Usar cor adaptável para o texto da linha de assinatura, que estava forçando 'text-dark' (preto) */
+        color: var(--bs-body-color) !important; 
+    }
+    .signature-block .text-muted {
+        /* CORREÇÃO: Usar cor adaptável para a sub-descrição */
+        color: var(--bs-secondary-color) !important;
+    }
+
+</style>
+{% endblock styles %}
+
+
+{% block content %}
+<div class="container mt-4 mb-5"> 
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9"> 
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="card shadow-sm mb-3 sticky-top" style="top: 10px; z-index: 1000;">
+                    <div class="card-body d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <h5 class="mb-0 fs-6">Editando: Termo de Compromisso</h5>
+                            <small class="text-muted d-block d-md-inline">
+                                Clique nos campos pontilhados (<span class="inline-input" style="width:50px; border-style:dashed;">_____</span>) para editar.
+                            </small>
+                        </div>
+                        <div>
+                            <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm">Cancelar</a>
+                            <button type="submit" class="btn btn-primary btn-sm px-3">Salvar</button> 
+                        </div>
+                    </div>
+                     {% if form.errors or form.non_field_errors %}
+                        <div class="card-footer bg-danger-subtle text-danger py-2 px-3">
+                            <strong class="d-block mb-1">Erro ao salvar: Por favor, corrija os campos abaixo.</strong>
+                            <ul class="mb-0 ps-4" style="font-size: 0.9em;">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                                
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>
+                                            <strong>{{ field.label }}:</strong> {{ error }}
+                                        </li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+
+
+                <div class="card shadow-sm">
+                    <div class="card-body p-4 p-md-5 document-body"> 
+                        <div class="text-center mb-4">
+                            <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP" style="width: 100%;">
+                        </div>
+
+                        <h5 class="text-center fw-bold mb-4" style="text-transform: uppercase;">Termo de Compromisso de Estágio Curricular Supervisionado</h5>
+                        <br>
+                        {% with aluno_vinculo_turma=aluno.alunoturma_set.first %}
+                        <p style="text-align: justify;">
+                            Pelo presente instrumento, firmado nos termos da Lei n° 11.788 de 25 de setembro de 2008, considerando a Resolução CNE/CEB nº01/2004 de 21 de janeiro de 2004, o Educando(a)
+                            <strong>{{ aluno.get_full_name|default:"(Nome Completo do Aluno)" }}</strong>,
+                            matriculada sob o n° <strong>{{ aluno.numero_matricula|default:"(N° Matrícula)" }}</strong>,
+                            do Curso Técnico em <strong>{{ aluno_vinculo_turma.turma.curso.nome|default:"(Nome do Curso)" }}</strong>
+                            da modalidade <strong>{{ aluno_vinculo_turma.turma.modalidade|default:"(Modalidade)" }}</strong>,
+                            {% if aluno_vinculo_turma.turma.curso.eixo == 'GESTAO' %}
+                            pertencente ao Eixo Tecnológico de Gestão,
+                            {% elif aluno_vinculo_turma.turma.curso.eixo == 'SAUDE' %}
+                                pertencente ao Eixo Tecnológico de Saúde e Segurança,
+                            {% else %}
+                                pertencente ao Eixo Tecnológico (não definido), 
+                            {% endif %}
+                              frequentando o <strong>{{ aluno_vinculo_turma.turma.ano_modulo|default:"(Ano/Módulo)" }}</strong>,
+
+                            CPF n° <strong>{% if aluno.cpf %}{% with cpf=aluno.cpf %}{{ cpf|slice:":3" }}.{{ cpf|slice:"3:6" }}.{{ cpf|slice:"6:9" }}-{{ cpf|slice:"9:" }}{% endwith %}{% else %}(CPF do Aluno){% endif %}</strong>,
+                            RG n° <strong>{% if aluno.rg %}{% with rg=aluno.rg %}{{ rg|slice:":2" }}.{{ rg|slice:"2:5" }}.{{ rg|slice:"5:8" }}-{{ rg|slice:"8:" }}{% endwith %}{% else %}(RG do Aluno){% endif %}</strong>,
+
+                            residente e domiciliado à <strong>{{ aluno.endereco_rua|default:"(Rua)" }}, n° {{ aluno.endereco_numero|default:"(N°)" }}, Bairro {{ aluno.endereco_bairro|default:"(Bairro)" }}</strong>,
+                            no município <strong>{{ aluno.endereco_cidade|default:"(Cidade)" }} (BA)</strong>,
+                            CEP <strong>{{ aluno.endereco_cep|default:"(CEP)" }}</strong>,
+                            doravante denominado <strong>ESTAGIÁRIO</strong>.
+                        {% endwith %} 
+                            O(A) <strong><input type="text" name="concedente_nome" value="{{ form.concedente_nome.value|default:'' }}" placeholder="(Nome da Empresa)" class="inline-input {% if form.concedente_nome.errors %}is-invalid{% endif %}" style="width: 350px;">
+                            {% for error in form.concedente_nome.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            pessoa jurídica de direito público, inscrita sob o CNPJ n°
+                            <strong><input type="text" name="concedente_cnpj" value="{{ form.concedente_cnpj.value|default:'' }}" placeholder="(XX.XXX.XXX/XXXX-XX)" data-mask="00.000.000/0000-00" class="inline-input {% if form.concedente_cnpj.errors %}is-invalid{% endif %}" style="width: 180px;">
+                              {% for error in form.concedente_cnpj.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>.
+                            Inscrição Estadual: isento, estabelecida na
+                            <strong><input type="text" name="concedente_rua" value="{{ form.concedente_rua.value|default:'' }}" placeholder="(Nome da Rua/ Av./ Pça)" class="inline-input {% if form.concedente_rua.errors %}is-invalid{% endif %}" style="width: 250px;">{% for error in form.concedente_rua.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            nº <strong><input type="text" name="concedente_numero" value="{{ form.concedente_numero.value|default:'' }}" placeholder="(Número)" class="inline-input {% if form.concedente_numero.errors %}is-invalid{% endif %}" style="width: 80px;">{% for error in form.concedente_numero.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            Bairro <strong><input type="text" name="concedente_bairro" value="{{ form.concedente_bairro.value|default:'' }}" placeholder="(Bairro)" class="inline-input {% if form.concedente_bairro.errors %}is-invalid{% endif %}" style="width: 180px;">{% for error in form.concedente_bairro.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            Cidade <strong><input type="text" name="concedente_cidade_uf" value="{{ form.concedente_cidade_uf.value|default:'' }}" placeholder="(Cidade-UF)" class="inline-input {% if form.concedente_cidade_uf.errors %}is-invalid{% endif %}" style="width: 150px;">{% for error in form.concedente_cidade_uf.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            CEP <strong><input type="text" name="concedente_cep" value="{{ form.concedente_cep.value|default:'' }}" placeholder="(00000-000)" data-mask="00000-000" class="inline-input {% if form.concedente_cep.errors %}is-invalid{% endif %}" style="width: 100px;">{% for error in form.concedente_cep.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            telefone <strong><input type="text" name="concedente_telefone" value="{{ form.concedente_telefone.value|default:'' }}" placeholder="(XX) XXXXX-XXXX" data-mask="(00) 0000[0]-0000" class="inline-input {% if form.concedente_telefone.errors %}is-invalid{% endif %}" style="width: 150px;">
+                              {% for error in form.concedente_telefone.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            endereço eletrônico: <strong><input type="email" name="concedente_email" value="{{ form.concedente_email.value|default:'' }}" placeholder="(email@empresa.com)" class="inline-input {% if form.concedente_email.errors %}is-invalid{% endif %}" style="width: 250px;">
+                              {% for error in form.concedente_email.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            representada por <strong><input type="text" name="concedente_representante" value="{{ form.concedente_representante.value|default:'' }}" placeholder="(Nome do Representante Legal)" class="inline-input {% if form.concedente_representante.errors %}is-invalid{% endif %}" style="width: 300px;">
+                              {% for error in form.concedente_representante.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            doravante denominada <strong>CONCEDENTE</strong>; e o <strong>Centro Estadual de Educação Profissional em Saúde e Gestão</strong> inscrita sob o CNPJ n° <strong>13.937.065/0001-00</strong>, estabelecida na <strong>Avenida Santos Dumont, S/N – Centro</strong>, na cidade de <strong>Guanambi-Bahia</strong>, CEP: <strong>46430-000</strong>, telefone <strong>(77) 3451-5444/5096</strong>, endereço eletrônico <strong>ceep.saudeegestao@educacao.ba.gov.br</strong>, representada pelo/a Gestor/a, Prof.ª <strong>Claudiana Lima Teixeira</strong>, de acordo com a Portaria nº 208669 de 08/07/2020, doravante denominada <strong>Unidade Escolar</strong>, ajustam o seguinte:
+                        </p>
+                        
+                        <p class="mt-4" style="text-align: justify;"> 
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Primeira</span>
+                            <strong>&mdash;</strong> Este instrumento tem por objetivo estabelecer as condições para a realização de Estágio curricular supervisionado e formalizar a relação jurídica especial existente entre o <strong>ESTAGIÁRIO</strong>, a <strong>CONCEDENTE</strong> e a <strong>UNIDADE ESCOLAR.</strong>
+                        </p>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Segunda</span>
+                            <strong>&mdash;</strong> O Estágio curricular supervisionado, definido neste termo de compromisso, obedece aos termos do artigo 2º, do parágrafo 1º da Lei n° 11.788 de 25 de setembro de 2008 e da Lei n° 9.394/96 (Diretrizes e Bases da Educação Nacional).
+                        </p>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Terceira</span>
+                            <strong>&mdash;</strong>
+                            O estágio terá início em
+                            <strong><input type="date" name="data_inicio" value="{{ form.data_inicio.value|default:'' }}" class="inline-input {% if form.data_inicio.errors %}is-invalid{% endif %}">
+                              {% for error in form.data_inicio.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>
+                            e terá seu término em
+                            <strong><input type="date" name="data_fim" value="{{ form.data_fim.value|default:'' }}" class="inline-input {% if form.data_fim.errors %}is-invalid{% endif %}">
+                              {% for error in form.data_fim.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            com uma atividade de
+                            <strong><input type="number" name="carga_horaria_diaria" value="{{ form.carga_horaria_diaria.value|default:'' }}" min="1" max="8" placeholder="(H)" class="inline-input {% if form.carga_horaria_diaria.errors %}is-invalid{% endif %}">
+                              {% for error in form.carga_horaria_diaria.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>
+                            horas diárias, totalizando
+                            <strong><input type="number" name="carga_horaria_semanal" value="{{ form.carga_horaria_semanal.value|default:'' }}" min="1" max="40" placeholder="(H)" class="inline-input {% if form.carga_horaria_semanal.errors %}is-invalid{% endif %}">
+                              {% for error in form.carga_horaria_semanal.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>
+                            horas semanais, sendo compatível com as atividades escolares e de acordo com o art. 10° da Lei n° 11.788/08.
+                        </p>
+                        <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 1° </span> <strong>&mdash;</strong>  Este Termo de Compromisso de Estágio pode ser prorrogado, a critério das partes, desde que não ultrapasse 02 (dois) anos, exceto quando se tratar de deficiente, devendo compatibilizar-se às atividades discentes.</p>
+                        <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 2° </span> <strong>&mdash;</strong> O Plano de Atividades, os Relatórios de Atividades e as Avaliações serão anexados ao Termo de Compromisso de Estágio sendo parte integrante e indissociável deste. </p>
+                        <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 3° </span> <strong>&mdash;</strong> As atividades principais poderão ser ampliadas, reduzidas, alteradas ou substituídas, de acordo com a progressividade do Estágio e do Currículo, desde que de comum e prévio acordo entre os partícipes.</p>
+                        <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 4° </span> <strong>&mdash;</strong> É assegurado ao <strong>ESTAGIÁRIO</strong> recesso das atividades, preferencialmente em período de férias escolares, nos termos do art. 13 da Lei n° 11.788/08.</p>
+                        <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 5° </span> <strong>&mdash;</strong> Nos períodos estabelecidos no calendário escolar como de avaliação é assegurado, ao <strong>ESTAGIÁRIO,</strong> a redução da carga horária em pelo menos a metade.</p>
+                        <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 6° </span> <strong>&mdash;</strong> Aplica-se ao <strong>ESTAGIÁRIO</strong> a legislação relacionada à saúde e segurança no trabalho, sendo sua implementação de responsabilidade da <strong>CONCEDENTE.</strong></p>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Quarta</span> <strong>&mdash;</strong> O <strong>ESTAGIÁRIO</strong> desenvolverá suas atividades obrigando-se a:
+                        </p>
+                        <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;"> 
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Cumprir com empenho e interesse a programação estabelecida no Plano de Atividades;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">b) Cumprir as condições fixadas para o Estágio observando as normas de trabalho vigentes na <strong>CONCEDENTE</strong>, preservando o sigilo e a confidencialidade sobre as informações que tenha acesso;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Observar a jornada e o horário ajustados para o Estágio;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Apresentar documentos comprobatórios da regularidade da sua situação escolar, sempre que solicitado pela <strong>CONCEDENTE</strong>;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">e) Manter rigorosamente atualizados seus dados cadastrais e escolares, junto à <strong>CONCEDENTE</strong>;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">f) Informar, de imediato, qualquer alteração na sua situação escolar, tais como: trancamento de matrícula, abandono, conclusão de curso ou transferência de Instituição de Ensino;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">g) Solicitar Relatórios de Atividades elaborados pela <strong>CONCEDENTE</strong> com periodicidade mínima de 06 (seis) meses e, inclusive, sempre que solicitado;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">h) Responder pelas perdas e danos eventualmente causados por inobservância das normas internas da <strong>CONCEDENTE</strong>, ou provocados por negligência ou imprudência.</li>
+                        </ul>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Quinta</span> <strong>&mdash; DA CONCEDENTE:</strong>
+                        </p>
+                        <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;"> 
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Celebrar o Termo de Compromisso de Estágio com o <strong>ESTAGIÁRIO</strong> e a <strong>Unidade Escolar</strong>, zelando pelo seu fiel cumprimento;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">b) Conceder o Estágio e proporcionar, ao <strong>ESTAGIÁRIO</strong>, condições para o exercício das atividades práticas compatíveis com o seu Plano de Atividades e Perfil Profissional de Conclusão do Curso Técnico em Análises Clínicas; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Designar como Supervisor o (a) funcionário (a)
+                            <strong><input type="text" name="supervisor_nome" value="{{ form.supervisor_nome.value|default:'' }}" placeholder="(Nome do Supervisor na Empresa)" class="inline-input {% if form.supervisor_nome.errors %}is-invalid{% endif %}" style="width: 300px;">
+                                {% for error in form.supervisor_nome.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            de seu quadro de pessoal, para orientá-lo e acompanhá-lo nas atividades do Estágio;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Solicitar ao <strong>ESTAGIÁRIO</strong>, a qualquer tempo, documentos comprobatórios da regularidade da situação escolar, uma vez que trancamento de matrícula, abandono, conclusão de curso ou transferência de Instituição de Ensino constituem motivos de imediata rescisão;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">e) Elaborar e encaminhar para a <strong>UNIDADE ESCOLAR</strong> o Relatório de Atividades, assinado pelo seu Supervisor, com periodicidade de no máximo 06 (seis) meses com vista obrigatória do <strong>ESTAGIÁRIO</strong>;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">f) Entregar, por ocasião do desligamento, Termo de Realização do Estágio com indicação das atividades desenvolvidas, contendo os períodos e a avaliação de desempenho;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">g) Manter em arquivo e à disposição da fiscalização os documentos que comprovem a relação de Estágio;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">h) Permitir o início das atividades de Estágio somente após o recebimento deste instrumento assinado pelos partícipes, estando o estudante assegurado através da apólice do seguro contra acidentes pessoais;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">i) Permitir o acesso do professor orientador de estágio designado pela Unidade Escolar, com finalidades de fiscalização e acompanhamento das atividades do estagiário, bem como do seu ambiente de trabalho, em qualquer momento, sem a necessidade de aviso prévio por parte da instituição de ensino.</li>
+                        </ul>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;"> Cláusula Sexta</span> <strong>&mdash; DA UNIDADE ESCOLAR:</strong>
+                        </p>
+                           <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;">
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Indicar, no Plano de Atividades, as atividades descritas no Catálogo Nacional dos Cursos Técnicos (Perfil Profissional de Conclusão), as condições de adequação do estágio à proposta pedagógica do curso, à etapa e modalidade da formação profissional, o horário e calendário escolar; avaliar as instalações da parte concedente do Estágio e sua adequação à formação cultural e profissional do educando;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">
+                                         b) Indicar, como Professor Orientador de Estágio, o /a Profª
+                                         <strong>
+                                             <select name="orientador" class="inline-input {% if form.orientador.errors %}is-invalid{% endif %}">
+                                                 <option value="">-----------------------------</option>
+                                                 {% for professor in form.fields.orientador.queryset %}
+                                                     <option value="{{ professor.id }}" {% if form.orientador.value|stringformat:"s" == professor.id|stringformat:"s" %}selected{% endif %}>
+                                                         {{ professor.get_full_name }}
+                                                     </option>
+                                                 {% endfor %}
+                                             </select>
+                                         </strong>
+                                         {% for error in form.orientador.errors %}
+                                             <span class="invalid-feedback-inline">{{ error }}</span>
+                                         {% endfor %}
+                                         como responsável pelo acompanhamento e avaliação das atividades do <strong>ESTAGIÁRIO</strong>; 
+                                     </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Comunicar à <strong>CONCEDENTE</strong>, no início do período letivo, as datas de realização das avaliações escolares;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Exigir do aluno a apresentação periódica, em prazo de seis meses, de Relatório de Atividades;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">e) Zelar pelo cumprimento do Termo de Compromisso de Estágio, reorientando o <strong>ESTAGIÁRIO</strong> para outro local em caso de descumprimento de suas normas; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">f) Avaliar a realização do Estágio curricular do aluno por meio de Instrumentos de Avaliação.</li>
+                           </ul>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Sétima</span> <strong>&mdash;</strong>
+                            Na vigência do presente Termo, o <strong>ESTAGIÁRIO</strong> estará incluído na cobertura do seguro contra acidentes pessoais, conforme certificado individual de seguro, Apólice nº
+                            <strong><input type="text" name="apolice_numero" value="{{ form.apolice_numero.value|default:'' }}" placeholder="(Número da Apólice)" class="inline-input {% if form.apolice_numero.errors %}is-invalid{% endif %}" style="width: 170px;">
+                              {% for error in form.apolice_numero.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>,
+                            Empresa: <strong><input type="text" name="apolice_empresa" value="{{ form.apolice_empresa.value|default:'' }}" placeholder="(Nome da Seguradora)" class="inline-input {% if form.apolice_empresa.errors %}is-invalid{% endif %}" style="width: 280px;">
+                              {% for error in form.apolice_empresa.errors %}<span class="invalid-feedback-inline">{{ error }}</span>{% endfor %}</strong>;
+                        </p>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Oitava</span> <strong>&mdash;</strong> O término do Estágio ocorrerá nos seguintes casos:</p>
+                           <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;">
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Automaticamente, ao término do período previsto para sua realização; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">b) Desistência do Estágio ou rescisão do Termo de Compromisso de Estágio, por decisão voluntária de qualquer dos partícipes, mediante comunicação por escrito com antecedência de 05 (cinco) dias; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Pelo trancamento da matrícula, abandono, desligamento ou conclusão do curso na <strong>Unidade Escolar;</strong></li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Pelo descumprimento total ou parcial das condições do presente Termo de Compromisso de Estágio, bem como da Lei nº 11.788/2008;</li>
+                           </ul>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Nona</span> <strong>&mdash;</strong>
+                            O <strong>ESTAGIÁRIO</strong> não receberá nenhum valor a título de bolsa-auxílio.
+                        </p>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Décima</span> <strong>&mdash;</strong>
+                             O Estágio não cria vínculo empregatício de qualquer natureza, desde que observados as disposições da Lei n° 11.788/08 e do presente Termo de Compromisso.
+                        </p>
+
+                        <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Décima Segunda </span> <strong>&mdash;</strong>
+                            Fica eleito o Foro da Justiça de Guanambi (BA), com renúncia de qualquer outro, por mais privilegiado que seja, para dirimir quaisquer dúvidas ou controvérsias em decorrência do presente Termo de Compromisso de Estágio que não puderem ser decididas diretamente pelos partícipes. E assim, justos e acordados, assinam este instrumento em três vias de igual teor e forma. 
+                        </p>
+
+                        <p class="mt-5 text-center">___________________ de _____________ de _________</p> 
+
+                        <h6 class="text-center **text-muted** small mt-5 pt-3" style="text-transform: uppercase;">Assinaturas</h6>
+                        
+                        <div class="row signature-block">
+                            <div class="col-12 text-center">
+                                <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                                <p class="small **fw-bold** mb-0">Responsável Legal do Estagiário</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row signature-block">
+                             <div class="col-6 text-center">
+                                <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                                <p class="small **fw-bold** mb-0">Supervisor do Estágio</p>
+                                <p class="small **fw-bold** mb-0">(Funcionário da Concedente)</p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                                <p class="small **fw-bold** mb-0">Nome do Representante da Concedente</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 pt-3">
+                             <h6 class="text-center text-muted small" style="text-transform: uppercase;"></h6>
+                             {% include 'estagio/includes/assinaturas_bloco.html' with documento=documento %}
+                        </div>
+                        
+                    <div class="mt-5" style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 3rem; font-size: 12pt; text-align: center; font-family: 'Times New Roman', Times, serif;">
+                        <p class="mb-0">
+                            Av. Luiz Viana Filho, 5ª Avenida, n° 550, Centro Administrativo da Bahia. CEP: 41.746-009.
+                        </p>
+                        <p class="mb-0">
+                            Salvador – Bahia - Brasil. Tel.: 55 71 3115–9018. Fax: 55 71 3115-9017 | www.educacao.ba.gov.br
+                        </p>
+                    </div>
+                    </div>
+                </div> 
+            </form> 
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
+<script>
+    $(document).ready(function(){
+        if ($.fn.inputmask) {
+            $('[data-mask]').inputmask();
+        } else {
+            console.warn("Biblioteca Inputmask não carregada. Máscaras não serão aplicadas.");
+        }
+    });
+</script>
+{% endblock scripts %}
+
+{% endblock content %}

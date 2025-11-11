@@ -1,0 +1,62 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+
+    {% if documentos_pendentes %}
+        <div class="mb-5">
+            <h2 class="mb-4 text-danger">Aguardando sua Assinatura (Documentos)</h2>
+            <p class="text-muted">Os seguintes documentos de estágio aguardam a sua análise e assinatura como orientador.</p>
+            
+            <div class="list-group shadow-sm">
+                
+                {% for doc in documentos_pendentes %}
+                    
+                    <a href="{% url 'professor_visualizar_documento' doc.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1 text-danger">Aluno(a): {{ doc.estagio.aluno.get_full_name }}</h5>
+                            
+                            <p class="mb-1 text-secondary">
+                                <strong>Documento: {{ doc.get_tipo_documento_display }}</strong>
+                            </p>
+                            
+                            <small class="text-muted">
+                                Empresa: {{ doc.estagio.supervisor_empresa }}
+                            </small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">Visualizar e Assinar</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <hr class="my-5"> 
+
+    {% endif %}
+    
+    <h2 class="mb-4">Meus Vínculos de Ensino</h2>
+    <p class="text-muted">Selecione um vínculo abaixo para ver as turmas associadas e lançar as notas.</p>
+
+    {% if vinculos %}
+        <div class="list-group shadow-sm">
+            {% for vinculo in vinculos %}
+                <a href="{% url 'listar_turmas_vinculadas' vinculo.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">Matéria: {{ vinculo.materia.nome }}</h5>
+                        <p class="mb-1 text-secondary">
+                            {{ vinculo.ano_modulo }} - {{ vinculo.curso.nome }} ({{ vinculo.get_modalidade_display }})
+                        </p>
+                    </div>
+                    <img src="{% static 'assets/img/turmas_professor.png' %}" width='30px' height='30px'>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning mt-4">
+            Nenhum vínculo de ensino encontrado para você no momento. Entre em contato com a administração.
+        </div>
+    {% endif %}
+    
+</div>
+{% endblock content %}

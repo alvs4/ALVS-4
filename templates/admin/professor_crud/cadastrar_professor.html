@@ -1,0 +1,201 @@
+{% extends 'base4.html' %} 
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Cadastro de Professor</h2>
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>Erro ao salvar. Por favor, verifique os campos:</strong>
+        <ul>
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" data-materias-url="{% url 'get_materias_por_curso' %}">
+        {% csrf_token %}
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <h5 class="card-title mb-3 border-bottom pb-2">Dados Pessoais</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nome</label>
+                        {{ form.first_name|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Sobrenome</label>
+                        {{ form.last_name|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data de Nascimento</label>
+                        {{ form.data_nascimento|add_class:"form-control"|attr:"type:date" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cidade de Nascimento</label>
+                        {{ form.cidade_nascimento|add_class:"form-control" }}
+                    </div>
+                </div>
+
+                <h5 class="card-title my-4 border-bottom pb-2">Documentação</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">CPF</label>
+                        {{ form.cpf|add_class:"form-control"|attr:"data-mask:000.000.000-00" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">RG</label>
+                        {{ form.rg|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Órgão Expedidor</label>
+                        {{ form.orgao|add_class:"form-control"|attr:"placeholder:SSP-" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data de Expedição</label>
+                        {{ form.data_expedicao|add_class:"form-control"|attr:"type:date" }}
+                    </div>
+                </div>
+
+                <h5 class="card-title my-4 border-bottom pb-2">Filiação</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nome da Mãe</label>
+                        {{ form.nome_mae|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nome do Pai</label>
+                        {{ form.nome_pai|add_class:"form-control" }}
+                    </div>
+                </div>
+                
+                <h5 class="card-title my-4 border-bottom pb-2">Endereço e Contato</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Telefone</label>
+                        {{ form.telefone|add_class:"form-control"|attr:"placeholder:(99) 99999-9999" }}
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Rua/ Av./ Pça</label>
+                        {{ form.endereco_rua|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Número</label>
+                        {{ form.endereco_numero|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Bairro</label>
+                        {{ form.endereco_bairro|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">CEP</label>
+                        {{ form.endereco_cep|add_class:"form-control"|attr:"placeholder:00000-000" }}
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Cidade</label>
+                        {{ form.endereco_cidade|add_class:"form-control" }}
+                    </div>
+                </div> <h5 class="card-title my-4 border-bottom pb-2">Vinculação</h5>
+
+                {{ formset.management_form }}
+
+                {% for subform in formset %}
+                    <div class="row gx-3 align-items-center mb-3 p-3 formset-row">
+                        <div class="col-md-6 col-lg-3 mb-2">
+                            <label class="form-label">{{ subform.curso.label }}</label>
+                            {{ subform.curso|add_class:"form-select curso-select" }}
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-2">
+                            <label class="form-label">{{ subform.materia.label }}</label>
+                            {{ subform.materia|add_class:"form-select materia-select" }}
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-2">
+                            <label class="form-label">{{ subform.ano_modulo.label }}</label>
+                            {{ subform.ano_modulo|add_class:"form-select" }}
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-2">
+                            <label class="form-label">{{ subform.modalidade.label }}</label>
+                            {{ subform.modalidade|add_class:"form-select" }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div> <div class="card-footer bg-body-tertiary text-end">
+                <a href="{% url 'gerenciar_professores' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Salvar Cadastro</button>
+            </div>
+        </div> </form>
+</div>
+{% endblock content %}
+
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="{% static 'js/inputmask.min.js' %}"></script>
+<script src="{% static 'js/inputmask.binding.js' %}"></script>
+<script src="{% static 'js/cadastro.js' %}"></script>
+
+<script>
+$(document).ready(function() {
+    
+    const materiasUrl = $('form[data-materias-url]').data('materias-url');
+
+    if (!materiasUrl) {
+        console.error("Erro: Atributo 'data-materias-url' não encontrado no <form>");
+        return;
+    }
+
+    function atualizarMaterias(cursoSelectElement) {
+        const $cursoSelect = $(cursoSelectElement);
+        const $formRow = $cursoSelect.closest('.formset-row');
+        const $materiaSelect = $formRow.find('.materia-select');
+        
+        const cursoId = $cursoSelect.val();
+
+        if (!cursoId) {
+            $materiaSelect.html('<option value="">Selecione um curso primeiro</option>');
+            return;
+        }
+
+        $materiaSelect.html('<option value="">Carregando matérias...</option>');
+
+        $.ajax({
+            url: materiasUrl, 
+            data: {
+                'curso_id': cursoId 
+            },
+            success: function(data) { 
+                $materiaSelect.html('');
+                
+                $materiaSelect.append('<option value="">Selecione a matéria</option>');
+
+                data.materias.forEach(function(materia) {
+                    $materiaSelect.append(
+                        $('<option></option>').val(materia.id).text(materia.nome)
+                    );
+                });
+            },
+            error: function() {
+                console.error("Erro ao buscar matérias.");
+                $materiaSelect.html('<option value="">Erro ao carregar matérias</option>');
+            }
+        });
+    }
+
+    $(document).on('change', '.curso-select', function() {
+        atualizarMaterias(this);
+    });
+
+});
+</script>
+{% endblock scripts %}

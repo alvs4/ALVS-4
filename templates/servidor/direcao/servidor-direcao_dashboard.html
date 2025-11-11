@@ -1,0 +1,51 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <h2 class="mb-4">Dashboard da Direção</h2>
+    <p class="text-muted">Painel focado na aprovação final de documentos e estágios.</p>
+
+    <hr class="my-4">
+
+    {% if documentos_pendentes %}
+        <div class="mb-5">
+            
+            <h3 class="mb-3 text-primary">Documentos Aguardando sua Assinatura</h3>
+            <p class="text-muted">
+                Os seguintes documentos foram aprovados pelo Professor Orientador
+                e agora aguardam a sua assinatura final.
+            </p>
+            
+            <div class="list-group shadow-sm">
+                {% for doc in documentos_pendentes %}
+                    
+                    <a href="{% url 'direcao_visualizar_documento' doc.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1 text-primary">Aluno(a): {{ doc.estagio.aluno.get_full_name }}</h5>
+                            
+                            <p class="mb-1 text-secondary">
+                                <strong>Documento: {{ doc.get_tipo_documento_display }}</strong>
+                            </p>
+                            
+                            <small class="text-muted">
+                                Aprovado por: Prof(a) {{ doc.estagio.orientador.get_full_name }}
+                            </small>
+                        </div>
+                        
+                        <span class="badge bg-primary rounded-pill">Visualizar e Assinar</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+    {% else %}
+        <div class="alert alert-success mt-4">
+            <h5 class="alert-heading">Tudo em dia!</h5>
+            <p class="mb-0">Não há nenhum documento aguardando a sua assinatura no momento.</p>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock content %}

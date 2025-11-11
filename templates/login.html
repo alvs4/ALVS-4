@@ -1,0 +1,80 @@
+{% extends 'base3.html' %}
+{% load static %}
+
+{% block main %}
+<main class="login-wrapper d-flex align-items-center justify-content-center flex-grow-1">
+  <div class="login-card shadow-lg p-4">
+    <div class="text-center mb-4">
+      <div class="logo-container">
+        <img src="{% static 'assets/img/ceep.png' %}" alt="Logo CEEP" class="img-fluid" style="max-height: 90px;">
+      </div>
+    </div>
+
+    <h2 class="text-center mb-4 fw-semibold text-primary">Acesso ao Sistema</h2>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors or form.errors %}
+        <div class="alert alert-danger py-2">
+          {% for error in form.non_field_errors %}
+            {{ error }}
+          {% endfor %}
+          {% for field in form %}
+            {% for error in field.errors %}
+              {{ error }}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label for="username" class="form-label fw-medium">Usuário</label>
+        <input type="text" class="form-control form-control-lg" id="username" name="username" required>
+        {% for error in form.username.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label for="password" class="form-label fw-medium">Senha</label>
+        <div class="input-group input-group-lg">
+          <input type="password" class="form-control" id="password" name="password" required>
+          <button id="togglePasswordButton" class="btn btn-outline-secondary" type="button">
+            <img id="togglePasswordIcon"
+              src="{% static 'assets/img/senha_oculta.png' %}"
+              data-show="{% static 'assets/img/senha_mostra.png' %}"
+              data-hide="{% static 'assets/img/senha_oculta.png' %}"
+              alt="Alternar Senha" style="width: 22px; height: 22px;">
+          </button>
+        </div>
+        {% for error in form.password.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const passwordInput = document.getElementById("password");
+  const toggleButton = document.getElementById("togglePasswordButton");
+  const toggleIcon = document.getElementById("togglePasswordIcon");
+
+  if (passwordInput && toggleButton && toggleIcon) {
+    toggleButton.addEventListener("click", function () {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleIcon.src = isPassword
+        ? toggleIcon.dataset.show
+        : toggleIcon.dataset.hide;
+    });
+  }
+});
+</script>
+{% endblock main %}

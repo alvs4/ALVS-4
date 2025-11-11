@@ -1,0 +1,53 @@
+{% extends 'base4.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+  <h2 class="mb-4">Matérias de {{ curso.nome }}</h2>
+  
+  <h4 class="mb-3">Matérias Técnicas</h4>
+  <div class="row">
+    {% for materia in materias_tecnicas %}
+      <div class="col-lg-3 col-md-4 col-sm-6 mb-3"> 
+        
+        <a href="{% url 'detalhar_materia' materia.id %}" 
+           class="btn btn-outline-secondary w-100 h-100 d-flex align-items-center justify-content-center py-4" 
+           style="min-height: 100px;">
+           {{ materia.nome }}
+        </a>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <p class="text-muted">Nenhuma matéria técnica vinculada a este curso.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <hr class="my-4">
+
+  <h4 class="mb-3">Matérias da Base Comum</h4>
+  <div class="row">
+    {% for materia in materias_base %}
+      <div class="col-lg-3 col-md-4 col-sm-6 mb-3"> 
+        
+        <a href="{% url 'detalhar_materia' materia.id %}" 
+           class="btn btn-outline-secondary w-100 h-100 d-flex align-items-center justify-content-center py-4" 
+           style="min-height: 100px;">
+           {{ materia.nome }}
+        </a>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <p class="text-muted">Nenhuma matéria da base comum vinculada a este curso.</p>
+      </div>
+    {% endfor %}
+  </div>
+  
+  <a href="{% url 'listar_materias' %}" class="btn btn-secondary mt-4">
+    <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+    Voltar para Cursos
+  </a>
+
+</div>
+{% endblock content %}

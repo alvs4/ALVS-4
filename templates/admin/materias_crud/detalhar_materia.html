@@ -1,0 +1,44 @@
+{% extends 'base4.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4"> 
+    
+    <h2 class="mb-4 text-body-emphasis">Professores de {{ materia.nome }}</h2>
+
+    {% if professores_com_vinculos %}
+    <table class="table table-striped table-hover align-middle shadow-sm">
+        <thead class="table-secondary text-body-emphasis">
+            <tr>
+                <th class="coluna-professor">Professores</th>
+                <th>Turmas / Modalidades Vinculadas</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for professor, vinculos in professores_com_vinculos %}
+            <tr>
+                <td class="text-body-emphasis">{{ professor.get_full_name }}</td>
+                <td>
+                    {% for vinculo in vinculos %}
+                    <span class="badge text-bg-secondary border border-secondary" style="font-size: 0.9em; margin: 2px; padding: 4px 8px;">
+                        {{ vinculo }} 
+                    </span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-info text-body-emphasis">
+        Nenhum professor ou vínculo cadastrado para esta matéria.
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'listar_materias' %}" class="btn btn-secondary mt-3 d-flex align-items-center w-auto"> 
+        <i class="bi bi-arrow-left me-2"></i>
+        Voltar para Matérias
+    </a>
+
+</div> 
+{% endblock content %}

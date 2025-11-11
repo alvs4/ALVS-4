@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block styles %}
+{{ block.super }}
+<style>
+    .document-body {
+        font-family: 'Times New Roman', Times, serif;
+        color: #000;
+        line-height: 1.6; 
+        font-size: 12pt;
+    }
+    .data-field {
+        border-bottom: 1px solid #666;
+        padding: 0 5px;
+        font-weight: bold;
+        min-height: 20px;
+        display: inline-block;
+    }
+    .data-label {
+        font-weight: normal;
+    }
+    .extra-activity-form {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: .375rem;
+    }
+
+    /* ========================== */
+    /*  MOLDURA ESTILO CANVA 3x4  */
+    /* ========================== */
+    .photo-upload-box {
+        width: 3cm;
+        height: 4cm;
+        border: 3px solid #0d6efd;
+        background-color: #fff;
+        float: right;
+        margin-left: 15px;
+        margin-bottom: 15px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.3s, background-color 0.3s;
+    }
+
+    .photo-upload-box:hover {
+        background-color: #eef6ff;
+        border-color: #0b5ed7;
+    }
+
+    /* Container interno para simular moldura */
+    .photo-frame {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        border-radius: 4px;
+    }
+
+    /* Imagem ajustada automaticamente como no Canva */
+    .photo-frame img {
+        position: absolute;
+        top: 50%;   
+        left: 50%;
+        height: 100%;
+        width: auto;
+        transform: translate(-50%, -50%);
+        object-fit: cover;
+    }
+
+    /* Caso a imagem seja muito larga, ajusta largura */
+    .photo-frame img.wide {
+        width: 100%;
+        height: auto;
+    }
+
+    #photo-placeholder {
+        text-align: center;
+        color: #6c757d;
+        font-size: 0.85em;
+    }
+
+    #photo-placeholder i {
+        font-size: 2em;
+        margin-bottom: 5px;
+        color: #0d6efd;
+    }
+</style>
+{% endblock styles %}
+
+
+{% block content %}
+<div class="container mt-4 mb-5"> 
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9"> 
+
+            <form method="post" novalidate enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="card shadow-sm mb-3 sticky-top" style="top: 10px; z-index: 1000;">
+                    <div class="card-body d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <h5 class="mb-0 fs-6">Editando: Ficha de Identificação</h5>
+                            <small class="text-muted d-block d-md-inline">
+                                Clique na moldura azul para anexar sua foto 3x4.
+                            </small>
+                        </div>
+                        <div>
+                            <a href="{% url 'visualizar_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm">Cancelar</a>
+                            <button type="submit" class="btn btn-primary btn-sm px-3">Salvar</button> 
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body p-4 p-md-5 bg-white document-body">
+                        
+                        <div class="text-center mb-4">
+                            <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP" style="width: 100%; max-width: 700px;">
+                        </div>
+
+                        {% with aluno_vinculo_turma=aluno.alunoturma_set.first %}
+                        
+                        <label for="{{ form.foto_3x4.id_for_label }}" class="photo-upload-box" id="photo-preview-box">
+                            <div class="photo-frame">
+                                {% if documento.foto_3x4 %}
+                                    <img src="{{ documento.foto_3x4.url }}" alt="Foto 3x4" id="photo-preview-img">
+                                {% else %}
+                                    <img src="" alt="Preview da Foto" id="photo-preview-img" style="display: none;">
+                                    <div id="photo-placeholder">
+                                        <i class="fas fa-camera"></i><br>
+                                        Clique para anexar foto 3x4
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </label>
+
+                        <div style="display: none;">
+                            {{ form.foto_3x4 }}
+                        </div>
+
+                        <h5 class="text-center fw-bold" style="text-transform: uppercase;">FICHA DO ALUNO(A)</h5>
+                        
+                        <h6 class="text-center fw-bold mt-2 mb-4" style="text-transform: uppercase;">
+                            CURSO: TÉCNICO EM {{ aluno_vinculo_turma.turma.curso.nome|upper|default:"(CURSO NÃO DEFINIDO)" }}
+                        </h6>
+
+                       {% endwith %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('{{ form.foto_3x4.id_for_label }}');
+    const previewImg = document.getElementById('photo-preview-img');
+    const placeholder = document.getElementById('photo-placeholder');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+
+                    const img = new Image();
+                    img.onload = function() {
+                        if (img.width > img.height) {
+                            previewImg.classList.add('wide');
+                        } else {
+                            previewImg.classList.remove('wide');
+                        }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
+{% endblock scripts %}

@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block styles %}
+{{ block.super }}
+<style>
+/* CSS deste template (copiado do seu VISUALIZAR) */
+.document-body {
+font-family: 'Times New Roman', Times, serif;
+color: #000;
+line-height: 1.6; 
+font-size: 12pt; 
+}
+.action-buttons-bar {
+ position: sticky; top: 10px; z-index: 1000;
+}
+/* Estilos para os campos de dados (simulando o PDF) */
+.data-field {
+        border-bottom: 1px solid #666;
+        padding: 0 5px;
+        font-weight: bold;
+        min-height: 20px;
+        display: inline-block;
+    }
+    .data-label {
+        font-weight: normal;
+    }
+    .extra-activity-block {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: .375rem;
+    }
+    
+    /* --- 🎯 NOVO CSS PARA A FOTO 🎯 --- */
+    .photo-box-3x4 {
+        width: 130px; 
+        height: 170px;
+        border: 2px solid #0d6efd; /* Borda azul Bootstrap */
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.8em;
+        color: #6c757d;
+        float: right; /* Flutua à direita */
+        margin-left: 15px;
+        margin-bottom: 15px;
+        padding: 5px;
+    }
+    .photo-box-3x4 img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Garante que a imagem cubra a caixa */
+    }
+
+    /* CSS de Impressão (copiado do seu VISUALIZAR) */
+    @media print {
+        body * { visibility: hidden; }
+        #print-area, #print-area * { visibility: visible; }
+        #print-area { position: absolute; left: 0; top: 0; margin: 0; padding: 0; width: 100%; }
+        .action-buttons-bar, .navbar, .sidebar, footer { display: none !important; }
+        .card { box-shadow: none !important; border: none !important; }
+        #print-area .card-body { padding: 0 !important; }
+        @page { size: A4; margin: 20mm; }
+        
+        /* Garante que a foto imprima corretamente */
+        .photo-box-3x4 {
+            border: 2px solid #000 !important; /* Borda preta na impressão */
+            background-color: #eee !important;
+        }
+    }
+</style>
+{% endblock styles %}
+
+
+{% block content %}
+<div class="container mt-4 mb-5"> 
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9"> 
+
+ {% if not is_public_verification %}
+                {% if request.user.tipo == 'aluno' %}
+                    <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar 
+                    </a>
+                {% elif request.user.tipo == 'professor' %}
+                    <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar 
+                    </a>
+                {% elif request.user.tipo == 'direcao' %}
+                    <a href="{% url 'servidor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar 
+                    </a>
+                {% elif request.user.tipo == 'servidor' %}
+                    <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar 
+                    </a>
+                {% endif %}
+            {% endif %}
+
+            <div class="d-flex justify-content-end mb-2">
+                {% if documento.status == 'REPROVADO' %}
+                    <span class="badge bg-danger text-white p-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Reprovado: Corrija e assine novamente
+                    </span>
+                {% endif %}
+            </div>
+            
+            <div class="card shadow-sm mb-3 action-buttons-bar">
+                <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h5 class="mb-0 fs-6 ms-2">Visualizar: Ficha de Identificação</h5>
+                    </div>
+                    
+                    {% if not is_public_verification %}
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        
+                        <button type="button" onclick="printDocumento()" class="btn btn-secondary btn-sm" title="Imprimir documento">
+                            <i class="fas fa-print me-1"></i> Imprimir
+                        </button>
+
+                        {% if request.user.tipo == 'aluno' %}
+                            {% if documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
+                                <a href="{% url 'preencher_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm" title="Editar os dados">
+                                    <i class="fas fa-edit me-1"></i> Editar
+                                </a>
+                                <form action="{% url 'assinar_documento_aluno' documento.id %}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('Você confirma que todos os dados desta ficha estão corretos? Esta ação não pode ser desfeita.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm" title="Assinar eletronicamente">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar e Encaminhar
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Você já assinou
+                                </span>
+                            {% endif %}
+                        
+                        {% elif request.user.tipo == 'professor' %}
+                            {% if pode_assinar_orientador %}
+                                <form action="{% url 'professor_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('Assinar este documento? Esta ação será registrada com seu nome e data.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm shadow">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar como Orientador
+                                    </button>
+                                </form>
+                            {% elif documento.assinado_orientador_em %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Assinado por você
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark p-2">
+                                    Não requer sua ação
+                                </span>
+                            {% endif %}
+                        
+                        {% elif request.user.tipo == 'direcao' %}
+                             <span class="badge bg-light text-dark p-2">
+                                Não requer sua ação
+                            </span>
+
+                        {% elif request.user.tipo == 'servidor' %}
+                            {% if pode_reprovar_servidor %}
+                            <form action="{% url 'servidor_reprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                  onsubmit="return confirm('Tem certeza que deseja REPROVAR este documento? As assinaturas serão limpas e ele voltará ao aluno para correção.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Reprovar este documento">
+                                    <i class="fas fa-times me-1"></i> Reprovar
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if pode_aprovar_servidor %}
+                            <form action="{% url 'servidor_aprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                  onsubmit="return confirm('Tem certeza que deseja APROVAR este documento? Esta ação o marcará como Concluído.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm shadow-sm" title="Aprovar este documento">
+                                    <i class="fas fa-check me-1"></i> Aprovar Documento
+                                </button>
+                            </form>
+                            {% else %}
+                                {% if documento.status == 'CONCLUIDO' %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Aprovado
+                                </span>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+     <div id="print-area" class="card shadow-sm">
+                <div class="card-body p-4 p-md-5 bg-white document-body">
+
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP" style="width: 100%; max-width: 700px;">
+                    </div>
+                    
+                    <div class="text-center mb-4" style="line-height: 1.2;">
+                        <h6 class="fw-bold mb-0" style="font-family: 'Times New Roman', Times, serif; text-transform: uppercase;">
+                            CENTRO ESTADUAL DE EDUCAÇÃO PROFISSIONAL
+                        </h6>
+                        <h6 class="fw-bold mb-1" style="font-family: 'Times New Roman', Times, serif; text-transform: uppercase;">
+                            EM SAÚDE E GESTÃO-GUANAMBI/BA
+                        </h6>
+                        <p class="mb-0 fst-italic" style="font-family: 'Times New Roman', Times, serif;">
+                            "Formando cidadãos para o mundo do trabalho!"
+                        </p>
+                    </div>
+
+                    {% with aluno_vinculo_turma=aluno.alunoturma_set.first %}
+                    
+                    <div class="photo-box-3x4">
+                        {% if documento.foto_3x4 %}
+                            <img src="{{ documento.foto_3x4.url }}" alt="Foto 3x4">
+                        {% else %}
+                            <span>Espaço para Foto 3x4</span>
+                        {% endif %}
+                    </div>
+                    
+                    <h5 class="text-center fw-bold" style="text-transform: uppercase;">FICHA DO ALUNO(A)</h5>
+                    
+                    <h6 class="text-center fw-bold mt-2 mb-4" style="text-transform: uppercase;">
+                        CURSO: TÉCNICO EM {{ aluno_vinculo_turma.turma.curso.nome|upper|default:"(CURSO NÃO DEFINIDO)" }}
+                    </h6>
+                    
+                    <h6 class="fw-bold mt-4" style="text-transform: uppercase;">Identificação:</h6>
+                    <div class="row g-3 mt-1">
+                        <div class="col-12">
+                            <span class="data-label">CURSO: TÉCNICO EM</span>
+                            <span class="data-field" style="width: 70%;">{{ aluno_vinculo_turma.turma.curso.nome|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="data-label">Nome:</span>
+                            <span class="data-field" style="width: 85%;">{{ aluno.get_full_name|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="data-label">Série:</span>
+                            <span class="data-field">{{ aluno_vinculo_turma.turma.ano_modulo|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="data-label">Turma:</span>
+                            <span class="data-field">{{ aluno_vinculo_turma.turma.turma|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="data-label">Turno:</span>
+                            <span class="data-field">{{ aluno_vinculo_turma.turma.get_turno_display|default:"(Não definido)" }}</span>
+                        </div>
+                            <div class="col-12">
+                            <span class="data-label">Modalidade:</span>
+                            <span class="data-field" style="width: 75%;">{{ aluno_vinculo_turma.turma.modalidade|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">Cidade de Nascimento:</span>
+                            <span class="data-field">{{ aluno.cidade_nascimento|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">Data de nascimento:</span>
+                            <span class="data-field">{{ aluno.data_nascimento|date:"d/m/Y"|default:"__/__/____" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="data-label">RG:</span>
+                            <span class="data-field">{{ aluno.rg|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="data-label">Órgão:</span>
+                            <span class="data-field">{{ aluno.orgao|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="data-label">Data de expedição:</span>
+                            <span class="data-field">{{ aluno.data_expedicao|date:"d/m/Y"|default:"__/__/____" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">CPF:</span>
+                            <span class="data-field">{{ aluno.cpf|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">N° de matrícula:</span>
+                            <span class="data-field">{{ aluno.numero_matricula|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="data-label">Pai:</span>
+                            <span class="data-field" style="width: 88%;">{{ aluno.nome_pai|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="data-label">Mãe:</span>
+                            <span class="data-field" style="width: 88%;">{{ aluno.nome_mae|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-12">
+                            <span class="data-label">Responsável pela matrícula:</span>
+                            <span class="data-field" style="width: 60%;">{{ aluno.responsavel_matricula|default:"(Não definido)" }}</span>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mt-5" style="text-transform: uppercase;">Endereço:</h6>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-9">
+                            <span class="data-label">Rua:</span>
+                            <span class="data-field" style="width: 90%;">{{ aluno.endereco_rua|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="data-label">n°</span>
+                            <span class="data-field" style="width: 70%;">{{ aluno.endereco_numero|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">Bairro:</span>
+                            <span class="data-field" style="width: 80%;">{{ aluno.endereco_bairro|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">Cidade:</span>
+                            <span class="data-field" style="width: 80%;">{{ aluno.endereco_cidade|default:"(Não definido)" }}-BA</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">CEP:</span>
+                            <span class="data-field" style="width: 80%;">{{ aluno.endereco_cep|default:"(Não definido)" }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="data-label">Fone:</span>
+                            <span class="data-field" style="width: 80%;">{{ aluno.telefone|default:"(Não definido)" }}</span>
+                        </div>
+                    </div>
+                    {% endwith %}
+
+
+                    <h6 class="fw-bold mt-5" style="text-transform: uppercase;">Atividade Extra-Escola:</h6>
+                    
+                    <div class="p-3 mt-2 extra-activity-block">
+                        <p class="mb-2"><strong>Tipo:</strong> {{ dados.atividade_tipo|default:"(Não informado)" }}</p>
+                        
+                        {% if dados.atividade_tipo and dados.atividade_tipo != 'NENHUMA' %}
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <strong>Empresa:</strong>
+                                <span class="data-field">{{ dados.atividade_empresa|default:"(Não informado)" }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Função:</strong>
+                                <span class="data-field">{{ dados.atividade_funcao|default:"(Não informado)" }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Carga Horária:</strong>
+                                <span class="data-field">{{ dados.atividade_carga_horaria|default:"(Não informado)" }}</span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row g-2">
+                            <div class="col-md-9">
+                                <strong>Rua/ Av./ Pça:</strong>
+                                <span class="data-field">{{ dados.atividade_rua|default:"(Não informado)" }}</span>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>N°:</strong>
+                                <span class="data-field">{{ dados.atividade_numero|default:"(Não informado)" }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Bairro:</strong>
+                                <span class="data-field">{{ dados.atividade_bairro|default:"(Não informado)" }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Cidade:</strong>
+                                <span class="data-field">{{ dados.atividade_cidade|default:"(Não informado)" }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>CEP:</strong>
+                                <span class="data-field">{{ dados.atividade_cep|default:"(Não informado)" }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <h6 class="fw-bold mt-5" style="text-transform: uppercase;">Observação:</h6>
+                    <div style="border-bottom: 1px solid #000; height: 3em;"></div>
+
+                    <p class="text-center mt-5">Guanambi, _____ de ___________________ de _________</p>
+
+                    <div class="mt-5 pt-3">
+                         {% include 'estagio/includes/assinaturas_bloco.html' with documento=documento %}
+                    </div>
+
+                </div> 
+            </div> 
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+{{ block.super }}
+<script>
+function printDocumento() {
+    const printArea = document.getElementById('print-area');
+    if (!printArea) {
+        console.error('Área de impressão (#print-area) não encontrada.');
+        alert('Não foi possível encontrar a área do documento para impressão.');
+        return;
+    }
+    const body = document.body;
+    const originalBodyContent = body.innerHTML;
+    const scrollY = window.scrollY;
+    try {
+        body.innerHTML = printArea.outerHTML;
+        window.print();
+    } finally {
+        body.innerHTML = originalBodyContent;
+        window.location.reload(); 
+    }
+}
+</script>
+{% endblock scripts %}
+{% endblock content %}

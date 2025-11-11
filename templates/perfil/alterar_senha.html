@@ -1,0 +1,93 @@
+{% extends 'base2.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+  <h2>Alterar Senha</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label for="id_old_password" class="form-label">Senha Atual</label>
+      <div class="input-group">
+        {{ form.old_password|add_class:"form-control" }}
+        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('id_old_password', 'icon_old')">
+          <img id="icon_old"
+               src="{% static 'assets/img/senha_oculta.png' %}"
+               data-show="{% static 'assets/img/senha_mostra.png' %}"
+               data-hide="{% static 'assets/img/senha_oculta.png' %}"
+               class="senha-icon"
+               alt="Toggle senha">
+        </button>
+      </div>
+      <div class="form-text">A senha padrão é: <strong>Senha123#</strong></div>
+    </div>
+
+    <div class="mb-3">
+      <label for="id_new_password1" class="form-label">Nova Senha</label>
+      <div class="input-group">
+        {{ form.new_password1|add_class:"form-control" }}
+        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('id_new_password1', 'icon_new1')">
+          <img id="icon_new1"
+               src="{% static 'assets/img/senha_oculta.png' %}"
+               data-show="{% static 'assets/img/senha_mostra.png' %}"
+               data-hide="{% static 'assets/img/senha_oculta.png' %}"
+               class="senha-icon"
+               alt="Toggle senha">
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="id_new_password2" class="form-label">Confirmar Nova Senha</label>
+      <div class="input-group">
+        {{ form.new_password2|add_class:"form-control" }}
+        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('id_new_password2', 'icon_new2')">
+          <img id="icon_new2"
+               src="{% static 'assets/img/senha_oculta.png' %}"
+               data-show="{% static 'assets/img/senha_mostra.png' %}"
+               data-hide="{% static 'assets/img/senha_oculta.png' %}"
+               class="senha-icon"
+               alt="Toggle senha">
+        </button>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Atualizar Senha</button>
+    <a href="{% url 'ver_perfil' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+  function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+
+    if (!input || !icon) return;
+
+    const isPassword = input.type === "password";
+    input.type = isPassword ? "text" : "password";
+
+    icon.src = isPassword ? icon.dataset.show : icon.dataset.hide;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+            const faviconLink = document.getElementById('faviconLink');
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+            function updateFavicon(e) {
+                if (e.matches) {
+                    faviconLink.href = "{% static 'assets/icon/icone_branco.ico' %}";
+                } else {
+                    faviconLink.href = "{% static 'assets/icon/icone_preto.ico' %}";
+                }
+            }
+
+            updateFavicon(prefersDarkScheme);
+
+            prefersDarkScheme.addEventListener('change', updateFavicon);
+        });
+</script>
+{% endblock scripts %}

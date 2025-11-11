@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>core</title>
+
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+<link id="faviconLink" rel="icon" href="{% static 'assets/icon/icone_preto.ico' %}" type="image/x-icon">
+<link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+</head>
+<body>
+
+<main class="container py-5">
+{% block content %}
+{% endblock content %}
+</main>
+
+<script>
+(function() {
+const getStoredTheme = () => localStorage.getItem('theme');
+const setStoredTheme = theme => localStorage.setItem('theme', theme);
+const htmlElement = document.querySelector('html');
+
+const getPreferredTheme = () => {
+const storedTheme = getStoredTheme();
+if (storedTheme) return storedTheme;
+return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const setTheme = theme => {
+htmlElement.setAttribute('data-bs-theme', theme);
+updateFavicon(theme);
+};
+        
+const faviconLink = document.getElementById('faviconLink');
+function updateFavicon(theme) {
+const isDark = theme === 'dark';
+faviconLink.href = isDark
+? "{% static 'assets/icon/icone_branco.ico' %}"
+: "{% static 'assets/icon/icone_preto.ico' %}";
+}
+
+const initialTheme = getPreferredTheme();
+setTheme(initialTheme);
+ 
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+const storedTheme = getStoredTheme();
+if (!storedTheme) { 
+setTheme(getPreferredTheme());
+}
+});
+})();
+</script>
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
+{% block scripts %}
+{% endblock scripts %}
+
+</body>
+</html>

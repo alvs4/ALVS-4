@@ -1,0 +1,158 @@
+{% extends 'base4.html' %} 
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-md-12">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3"> 
+                <h2 class="mb-0 text-body-emphasis">Detalhes do Servidor</h2>
+                <a href="{% url 'gerenciar_servidores' %}" class="btn btn-secondary d-flex align-items-center">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Voltar
+                </a>
+            </div>
+
+            <div class="card p-0 shadow-lg border-0 bg-body">
+                <div class="card-body p-0">
+                    
+                    <div class="text-bg-secondary p-3 mb-3 d-flex justify-content-between align-items-start rounded-top"> 
+                        <div>
+                            <h4 class="mb-0 text-white">{{ servidor.get_full_name }}</h4>
+                            <p class="mb-0 mt-1">
+                                {% if servidor.tipo == 'direcao' %}
+                                    <span class="badge text-bg-info p-2 me-2">DIREÇÃO</span>
+                                {% elif servidor.tipo == 'servidor' %}
+                                    <span class="badge text-bg-secondary p-2 me-2">ADMINISTRATIVO</span>
+                                    {% if servidor.eixo %}
+                                        <span class="text-white opacity-75"> | {{ servidor.get_eixo_display }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="d-flex flex-column align-items-end text-white">
+                            <small class="opacity-75">MATRÍCULA</small>
+                            <strong class="h5 mb-0">{{ servidor.numero_matricula|default:"N/A" }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="px-4 pb-4">
+                        
+                        <h5 class="mb-2 text-secondary-emphasis border-bottom pb-2">Dados Pessoais e Documentação</h5> 
+                        <div class="row g-2 mb-3"> 
+                            
+                            <div class="col-md-6">
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">CPF:</strong>
+                                    <span>
+                                        {% if servidor.cpf %}
+                                            {% with cpf=servidor.cpf %}
+                                                {{ cpf|slice:":3" }}.{{ cpf|slice:"3:6" }}.{{ cpf|slice:"6:9" }}-{{ cpf|slice:"9:" }}
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="text-body-secondary">Não informado</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">RG:</strong>
+                                    <span>
+                                        {% if servidor.rg %}
+                                            {% with rg=servidor.rg %}
+                                                {{ rg|slice:":2" }}.{{ rg|slice:"2:5" }}.{{ rg|slice:"5:8" }}-{{ rg|slice:"8:" }}
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="text-body-secondary">Não informado</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Orgão Expedidor:</strong>
+                                    <span>{{ servidor.orgao|default:"Não informado" }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Data de Expedição:</strong>
+                                    <span>{{ servidor.data_expedicao|date:"d/m/Y"|default:"Não informada" }}</span>
+                                </div>
+
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Data de Nascimento:</strong>
+                                    <span>{{ servidor.data_nascimento|date:"d/m/Y"|default:"Não informada" }}</span>
+                                </div>
+
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Cidade de Nascimento:</strong>
+                                    <span>{{ servidor.cidade_nascimento|default:"Não informada" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                        <h5 class="mb-2 text-secondary-emphasis border-bottom pb-2 mt-3">Filiação</h5> 
+                        <div class="row g-2 mb-3"> 
+                            <div class="col-md-6">
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Nome da Mãe:</strong>
+                                    <span>{{ servidor.nome_mae|default:"Não informado" }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Nome do Pai:</strong>
+                                    <span>{{ servidor.nome_pai|default:"Não informado" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <h5 class="mb-2 text-secondary-emphasis border-bottom pb-2 mt-3">Endereço e Contato</h5> 
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Telefone:</strong>
+                                    <span>{{ servidor.telefone|default:"Não informado" }}</span>
+                                </div>
+                            
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Endereço:</strong>
+                                    <span> {{ servidor.endereco_rua|default:"-" }}, Nº {{ servidor.endereco_numero|default:"-" }}</span>
+                                </div>
+
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Bairro:</strong>
+                                    <span>{{ servidor.endereco_bairro|default:"-" }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">Cidade:</strong>
+                                    <span>{{ servidor.endereco_cidade|default:"-" }} </span>
+                                </div>
+
+                                <div class="d-flex mb-0">
+                                    <strong class="me-1 text-body-emphasis">CEP:</strong>
+                                    <span>
+                                        {% if servidor.endereco_cep %}
+                                            {{ servidor.endereco_cep|slice:":5" }}{{ servidor.endereco_cep|slice:"5:" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

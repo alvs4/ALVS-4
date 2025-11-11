@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light"> <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>core</title>
+
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"> <link id="faviconLink" rel="icon" href="{% static 'assets/icon/icone_preto.ico' %}" type="image/x-icon">
+<link rel="stylesheet" href="{% static 'css/style2.css' %}">
+</head>
+
+<body class="theme-aware"> 
+
+<header class="text-center py-4">
+{% block header %}{% endblock header %}
+<button id="theme-toggle" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-3 theme-toggle-btn" title="Alternar tema">
+<i class="bi bi-sun fs-5"></i>
+</button>
+</header>
+
+<main class="container flex-grow-1 d-flex align-items-center justify-content-center">
+{% block main %}{% endblock main %}
+</main>
+
+<script>
+(function() {
+const getStoredTheme = () => localStorage.getItem('theme');
+const setStoredTheme = theme => localStorage.setItem('theme', theme);
+const htmlElement = document.querySelector('html');
+const toggleElement = document.getElementById('theme-toggle');
+
+const getPreferredTheme = () => {
+const storedTheme = getStoredTheme();
+if (storedTheme) {
+return storedTheme;
+}
+return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+ };
+
+const setTheme = theme => {
+htmlElement.setAttribute('data-bs-theme', theme);
+updateIcon(theme);
+updateFavicon(theme);
+};
+
+const updateIcon = (theme) => {
+if (!toggleElement) return;
+const icon = toggleElement.querySelector('i');
+const isDark = theme === 'dark';
+icon.className = (isDark ? 'bi bi-moon-fill' : 'bi bi-sun') + ' fs-5';
+};
+
+toggleElement.addEventListener('click', () => {
+const currentTheme = htmlElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+setStoredTheme(newTheme);
+setTheme(newTheme);
+});
+ 
+const faviconLink = document.getElementById('faviconLink');
+function updateFavicon(theme) {
+const isDark = theme === 'dark';
+faviconLink.href = isDark
+? "{% static 'assets/icon/icone_branco.ico' %}"
+: "{% static 'assets/icon/icone_preto.ico' %}";
+}
+
+const initialTheme = getPreferredTheme();
+setTheme(initialTheme);
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+const storedTheme = getStoredTheme();
+if (!storedTheme) { 
+    setTheme(getPreferredTheme());
+}
+});
+
+})();
+</script>
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+{% block scripts %}{% endblock scripts %}
+</body>
+</html>

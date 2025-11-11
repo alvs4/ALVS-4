@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load dict_utils %}
+
+{% block content %}
+<body data-url-inserir-nota="{% url 'inserir_nota' %}">
+  <h2 class="mb-4"><strong>{{ materia.nome }}</strong> - <strong>{{ turma.nome }}</strong></h2>
+
+  <div class="row">
+    {% for aluno in alunos %}
+    <div class="col-md-4 mb-4">
+      <div class="card text-dark bg-light h-100 shadow d-flex flex-row align-items-center p-3">
+        <img src="{% static 'assets/img/user-icon.png' %}" class="rounded-circle me-3" width="70" height="70" alt="Foto padrão">
+        <div>
+          <h5 class="card-title text-uppercase mb-1">{{ aluno.get_full_name }}</h5>
+          <p class="card-text mb-2">{{ aluno.email }}</p>
+          <div class="d-flex gap-2">
+            <a href="{% url 'ver_detalhes_aluno_professor' aluno.id %}" class="btn btn-outline-secondary btn-sm">
+              <img src="{%static 'assets/img/detalhar.png'%}" width='25px' height='25px' class="me-2">
+              Ver Detalhes
+            </a>
+            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNota{{ aluno.id }}">
+              <img src="{%static 'assets/img/editar.png'%}" width='25px' height='25px' class="me-2">
+              Inserir Notas
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="modalNota{{ aluno.id }}" tabindex="-1" aria-labelledby="modalLabel{{ aluno.id }}" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title">Inserir Notas de {{ aluno.get_full_name }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            {% with nota=notas_dict|get_item:aluno.id %}
+            <form id="notaForm{{ aluno.id }}">
+              {% csrf_token %}
+              <input type="hidden" name="aluno_id" value="{{ aluno.id }}">
+              <input type="hidden" name="materia_id" value="{{ materia.id }}">
+              <input type="hidden" name="turma_id" value="{{ turma.id }}">
+
+              <h5>Semestre 1</h5>
+              <table class="table table-bordered">
+                <tr>
+                  <td>N1</td>
+                  <td>
+                    <input type="number" class="form-control" name="nota_1_semestre1"
+                          value="{{ nota.nota_1_semestre1|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                  </td>
+                </tr>
+                <tr>
+                  <td>N2</td>
+                  <td>
+                    <input type="number" class="form-control" name="nota_2_semestre1"
+                          value="{{ nota.nota_2_semestre1|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                  </td>
+                </tr>
+                <tr id="paralela1-row-{{ aluno.id }}" class="{% if nota.paralela_1 %}d-table-row{% else %}d-none{% endif %}">
+                  <td>Paralela</td>
+                  <td>
+                    <input type="number" class="form-control" name="paralela_1"
+                          value="{{ nota.paralela_1|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                  </td>
+                </tr>
+              </table>
+
+              <h5>Semestre 2</h5>
+              <table class="table table-bordered">
+                <tr>
+                  <td>N1</td>
+                  <td>
+                    <input type="number" class="form-control" name="nota_1_semestre2"
+                          value="{{ nota.nota_1_semestre2|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                  </td>
+                </tr>
+                <tr>
+                  <td>N2</td>
+                  <td>
+                    <input type="number" class="form-control" name="nota_2_semestre2"
+                          value="{{ nota.nota_2_semestre2|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                  </td>
+                </tr>
+                <tr id="paralela2-row-{{ aluno.id }}" class="{% if nota.paralela_2 %}d-table-row{% else %}d-none{% endif %}">
+                  <td>Paralela</td>
+                  <td>
+                    <input type="number" class="form-control" name="paralela_2"
+                          value="{{ nota.paralela_2|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                  </td>
+                </tr>
+              </table>
+
+              <div id="final-section-{{ aluno.id }}" class="{% if nota.nota_recuperacao %}d-block{% else %}d-none{% endif %}">
+                <h5>Final</h5>
+                <table class="table table-bordered">
+                  <tr>
+                    <td>NF</td>
+                    <td>
+                      <input type="number" class="form-control" name="nota_recuperacao"
+                            value="{{ nota.nota_recuperacao|floatformat:0|default_if_none:'' }}" max="100" min="0" step="0.1">
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <div id="statusBadge{{ aluno.id }}">
+                {% if nota.status_final %}
+                  {% if nota.status_final == "Aprovado" %}
+                    <span class="badge bg-success text-white px-3 py-2">{{ nota.status_final }}</span>
+                  {% elif nota.status_final == "Reprovado na Final" %}
+                    <span class="badge bg-danger text-white px-3 py-2">{{ nota.status_final }}</span>
+                  {% elif nota.status_final == "Reprovado" %}
+                    <span class="badge bg-danger-subtle text-dark px-3 py-2">{{ nota.status_final }}</span>
+                  {% else %}
+                    <span class="badge bg-secondary px-3 py-2">{{ nota.status_final }}</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </form>
+            {% endwith %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-outline-success text-dark" onclick="aplicarNota({{ aluno.id }})">Aplicar Nota</button>
+            <button type="button" class="btn btn-secondary" onclick="salvarNota({{ aluno.id }})">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+      <div class="alert alert-info text-center shadow-sm">
+        Nenhum aluno matriculado nesta matéria.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary mt-4">
+    <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+      Voltar
+  </a>
+</body>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{% static 'js/inserir_nota.js' %}"></script>
+<script src="{% static 'js/nota.js' %}"></script>
+{% endblock scripts %}

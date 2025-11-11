@@ -1,0 +1,98 @@
+{% extends 'base4.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Professores Cadastrados</h2>
+        
+        <a href="{% url 'cadastrar_professor' %}" class="btn btn-outline-secondary d-flex align-items-center">
+            <i class="bi bi-plus-circle-fill me-2 fs-5"></i>
+            Novo Professor
+        </a>
+    </div>
+
+    <table class="table table-bordered align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th class="coluna-nome">Nome</th>
+                <th>Vínculação</th>
+                <th class="text-center">⋮</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for professor in professores %}
+            <tr>
+                <td class="text-body-emphasis">{{ professor.get_full_name }}</td>
+                <td>
+                    {% for vinculo in professor.professormateriaanocursomodalidade_set.all %}
+                        <span class="badge bg-primary"> 
+                            {{ vinculo.materia.nome }} - {{ vinculo.ano_modulo }} - {{ vinculo.curso.nome }} ({{ vinculo.get_modalidade_display }})
+                        </span>
+                        <br>
+                    {% empty %}
+                        <span class="text-body-secondary">Nenhum vínculo cadastrado</span>
+                    {% endfor %}
+                </td>
+                <td class="text-center">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-center" data-bs-toggle="dropdown" style="width: 44px; height: 44px; padding: 0;">
+                            ⋮
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item d-flex align-items-center" href="{% url 'ver_detalhes_professor' professor.id %}">
+                                <i class="bi bi-info-circle-fill me-2"></i> 
+                                Ver Detalhes
+                            </a></li>
+                            <li><a class="dropdown-item d-flex align-items-center" href="{% url 'editar_professor' professor.id %}">
+                                <i class="bi bi-pencil-square me-2"></i> 
+                                Editar
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#confirmarRemocao{{ professor.id }}">
+                                    <i class="bi bi-trash-fill me-2"></i> 
+                                    Remover
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-body-secondary">Nenhum professor cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% for professor in professores %}
+      <div class="modal fade" id="confirmarRemocao{{ professor.id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger-subtle border-danger border-bottom-1">
+              <h5 class="modal-title text-danger">Confirmar Remoção</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+              Tem certeza que deseja remover o usuário <strong>{{ professor.get_full_name }}</strong>?
+            </div>
+            <div class="modal-footer">
+              <form method="post" action="{% url 'remover_professor' professor.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Sim, remover</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mt-4 d-flex align-items-center w-auto">
+        <i class="bi bi-arrow-left me-2"></i> 
+        Voltar
+    </a>
+</div>
+{% endblock content %}

@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4 mb-5"> 
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9"> 
+
+            {% if request.user.tipo == 'aluno' %}
+                <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'professor' %}
+                <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'direcao' %}
+                <a href="{% url 'servidor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'servidor' %}
+                <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% endif %}
+
+        <div class="d-flex justify-content-end mb-2">
+            {% if documento.status == 'REPROVADO' %}
+                <span class="badge bg-danger text-white p-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Reprovado: Corrija e assine novamente
+                </span>
+            {% endif %}
+        </div>
+            
+        <div class="card shadow-sm mb-3 action-buttons-bar">
+                <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h5 class="mb-0 fs-6 ms-2">Visualizar: Termo de Compromisso</h5>
+                    </div>
+                    
+                    {% if not is_public_verification %}
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        
+                        <button type="button" onclick="printDocumento()" class="btn btn-secondary btn-sm" title="Imprimir documento para assinatura manual">
+                            <i class="fas fa-print me-1"></i> Imprimir
+                        </button>
+
+                        {% if request.user.tipo == 'aluno' %}
+                            
+                            {% if documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
+                            
+                                <a href="{% url 'preencher_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm" title="Editar os dados ou anexar PDF">
+                                    <i class="fas fa-edit me-1"></i> Editar
+                                </a>
+                                
+                                <form id="upload-pdf-form" action="{% url 'upload_pdf_assinado' documento.id %}" method="post" enctype="multipart/form-data" class="d-inline">
+                                    {% csrf_token %}
+                                    <label for="pdf-upload-input" class="btn btn-secondary btn-sm m-0" title="Anexar PDF com assinaturas manuais" style="cursor: pointer;">
+                                        <i class="fas fa-paperclip me-1"></i> Anexar PDF
+                                    </label>
+                                    <input type="file" name="pdf_supervisor_assinado" id="pdf-upload-input" accept="application/pdf" style="display: none;" onchange="document.getElementById('upload-pdf-form').submit();">
+                                </form>
+                                
+                                <form action="{% url 'assinar_documento_aluno' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Você confirma que leu e concorda com todos os termos deste documento? Esta ação não pode ser desfeita.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm" title="Assinar eletronicamente">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar e Encaminhar
+                                    </button>
+                                </form>
+                            
+                            {% else %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Você já assinou
+                                </span>
+                            {% endif %}
+                        
+                        {% elif request.user.tipo == 'professor' %}
+                            
+                            {% if pode_assinar_orientador %}
+                                <form action="{% url 'professor_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Assinar este documento? Esta ação será registrada com seu nome e data.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm shadow">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar como Orientador
+                                    </button>
+                                </form>
+                            {% elif documento.assinado_orientador_em %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Assinado por você
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark p-2">
+                                    Não requer sua ação
+                                </span>
+                            {% endif %}
+
+                        {% elif request.user.tipo == 'direcao' %}
+                            
+                            {% if pode_assinar_direcao %}
+                                <form action="{% url 'direcao_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Assinar este documento como Diretor(a)? Esta ação será registrada com seu nome e data.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm shadow">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar como Direção
+                                    </button>
+                                </form>
+                            {% elif documento.assinado_diretor_em %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Assinado pela Direção
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark p-2">
+                                    Não requer sua ação
+                                </span>
+                            {% endif %}
+
+                        {% elif request.user.tipo == 'servidor' %}
+                            
+                            {% if pode_reprovar_servidor %}
+                            <form action="{% url 'servidor_reprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Tem certeza que deseja REPROVAR este documento? As assinaturas serão limpas e ele voltará ao aluno para correção.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Reprovar este documento">
+                                    <i class="fas fa-times me-1"></i> Reprovar
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if pode_aprovar_servidor %}
+                            <form action="{% url 'servidor_aprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Tem certeza que deseja APROVAR este documento? Esta ação o marcará como Concluído.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm shadow-sm" title="Aprovar Documento">
+                                    <i class="fas fa-check me-1"></i> Aprovar Documento
+                                </button>
+                            </form>
+                            {% else %}
+                                {% if documento.status == 'CONCLUIDO' %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Aprovado
+                                </span>
+                                {% endif %}
+                            {% endif %}
+
+                        {% endif %}
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div id="print-area" class="card shadow-sm">
+                <div class="card-body p-4 p-md-5 document-body"> 
+
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP" style="width: 100%; max-width: 700px;">
+                    </div>
+
+                    <h5 class="text-center fw-bold mb-4" style="text-transform: uppercase;">Termo de Compromisso de Estágio Curricular Supervisionado</h5>
+                    <br>
+                    
+                    {% with aluno_vinculo_turma=aluno.alunoturma_set.first %}
+                    <p style="text-align: justify;">
+                        Pelo presente instrumento, firmado nos termos da Lei n° 11.788 de 25 de setembro de 2008, considerando a Resolução CNE/CEB nº01/2004 de 21 de janeiro de 2004, o Educando(a)
+                        <strong>{{ aluno.get_full_name|default:"(Nome Completo do Aluno)" }}</strong>,
+                        matriculada sob o n° <strong>{{ aluno.numero_matricula|default:"(N° Matrícula)" }}</strong>,
+                        do Curso Técnico em <strong>{{ aluno_vinculo_turma.turma.curso.nome|default:"(Nome do Curso)" }}</strong>
+                        da modalidade <strong>{{ aluno_vinculo_turma.turma.modalidade|default:"(Modalidade)" }}</strong>,
+                        {% if aluno_vinculo_turma.turma.curso.eixo == 'GESTAO' %}
+                        pertencente ao Eixo Tecnológico de Gestão,
+                        {% elif aluno_vinculo_turma.turma.curso.eixo == 'SAUDE' %}
+                            pertencente ao Eixo Tecnológico de Saúde e Segurança,
+                        {% else %}
+                            pertencente ao Eixo Tecnológico (não definido), 
+                        {% endif %}
+                        frequentando o <strong>{{ aluno_vinculo_turma.turma.ano_modulo|default:"(Ano/Módulo)" }}</strong>,
+                        CPF n° <strong>
+                            {% if aluno.cpf %}
+                                {% with cpf=aluno.cpf %}
+                                    {{ cpf|slice:":3" }}.{{ cpf|slice:"3:6" }}.{{ cpf|slice:"6:9" }}-{{ cpf|slice:"9:" }}
+                                {% endwith %}
+                            {% else %}
+                                (CPF do Aluno)
+                            {% endif %}
+                        </strong>,
+                        RG n° <strong>
+                            {% if aluno.rg %}
+                                {% with rg=aluno.rg %}
+                                    {{ rg|slice:":2" }}.{{ rg|slice:"2:5" }}.{{ rg|slice:"5:8" }}-{{ rg|slice:"8:" }}
+                                {% endwith %}
+                            {% else %}
+                                (RG do Aluno)
+                            {% endif %}
+                        </strong>,
+                        residente e domiciliado à <strong>{{ aluno.endereco_rua|default:"(Rua)" }}, n° {{ aluno.endereco_numero|default:"(N°)" }}, Bairro {{ aluno.endereco_bairro|default:"(Bairro)" }}</strong>,
+                        no município <strong>{{ aluno.endereco_cidade|default:"(Cidade)" }} (BA)</strong>,
+                        CEP <strong>{{ aluno.endereco_cep|default:"(CEP)" }}</strong>,
+                        doravante denominado <strong>ESTAGIÁRIO</strong>.
+                    {% endwith %} 
+                        O(A) <strong>{{ dados.concedente_nome|default:"(Nome da Empresa)" }}</strong>,
+                        pessoa jurídica de direito público, inscrita sob o CNPJ n°
+                        <strong>{{ dados.concedente_cnpj|default:"(XX.XXX.XXX/XXXX-XX)" }}</strong>.
+                        Inscrição Estadual: isento, estabelecida na
+                        <strong>{{ dados.concedente_rua|default:"(Nome da Rua/ Av./ Pça)" }}</strong>,
+                        nº <strong>{{ dados.concedente_numero|default:"(Número)" }}</strong>,
+                        Bairro <strong>{{ dados.concedente_bairro|default:"(Bairro)" }}</strong>,
+                        Cidade <strong>{{ dados.concedente_cidade_uf|default:"(Cidade-UF)" }}</strong>,
+                        CEP <strong>{{ dados.concedente_cep|default:"(00000-000)" }}</strong>,
+                        telefone <strong>{{ dados.concedente_telefone|default:"(XX) XXXXX-XXXX" }}</strong>,
+                        endereço eletrônico: <strong>{{ dados.concedente_email|default:"(email@empresa.com)" }}</strong>,
+                        representada por <strong>{{ dados.concedente_representante|default:"(Nome do Representante Legal)" }}</strong>,
+                        doravante denominada <strong>CONCEDENTE</strong>; e o <strong>Centro Estadual de Educação Profissional em Saúde e Gestão</strong> inscrita sob o CNPJ n° <strong>13.937.065/0001-00</strong>, estabelecida na <strong>Avenida Santos Dumont, S/N – Centro</strong>, na cidade de <strong>Guanambi-Bahia</strong>, CEP: <strong>46430-000</strong>, telefone <strong>(77) 3451-5444/5096</strong>, endereço eletrônico <strong>ceep.saudeegestao@educacao.ba.gov.br</strong>, representada pelo/a Gestor/a, Prof.ª <strong>Claudiana Lima Teixeira</strong>, de acordo com a Portaria nº 208669 de 08/07/2020, doravante denominada <strong>Unidade Escolar</strong>, ajustam o seguinte:
+                    </p>
+
+                    <p class="mt-4" style="text-align: justify;"> 
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Primeira</span>
+                        <strong>&mdash;</strong> Este instrumento tem por objetivo estabelecer as condições para a realização de Estágio curricular supervisionado e formalizar a relação jurídica especial existente entre o <strong>ESTAGIÁRIO</strong>, a <strong>CONCEDENTE</strong> e a <strong>UNIDADE ESCOLAR.</strong>
+                    </p>
+                    <p class="mt-4" style="text-align: justify;">
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Segunda</span>
+                        <strong>&mdash;</strong> O Estágio curricular supervisionado, definido neste termo de compromisso, obedece aos termos do artigo 2º, do parágrafo 1º da Lei n° 11.788 de 25 de setembro de 2008 e da Lei n° 9.394/96 (Diretrizes e Bases da Educação Nacional).
+                    </p>
+                    <p class="mt-4" style="text-align: justify;">
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Terceira</span>
+                        <strong>&mdash;</strong>
+                        O estágio terá início em
+                        <strong>{{ dados.data_inicio|date:"d/m/Y"|default:"//" }}</strong>
+                        e terá seu término em
+                        <strong>{{ dados.data_fim|date:"d/m/Y"|default:"//" }}</strong>,
+                        com uma atividade de
+                        <strong>{{ dados.carga_horaria_diaria|default:"" }}</strong>
+                        horas diárias, totalizando
+                        <strong>{{ dados.carga_horaria_semanal|default:"" }}</strong>
+                        horas semanais, sendo compatível com as atividades escolares e de acordo com o art. 10° da Lei n° 11.788/08.
+                    </p>
+                    
+                    <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 1° </span> <strong>&mdash;</strong>  Este Termo de Compromisso de Estágio pode ser prorrogado, a critério das partes, desde que não ultrapasse 02 (dois) anos, exceto quando se tratar de deficiente, devendo compatibilizar-se às atividades discentes.</p>
+                    <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 2° </span> <strong>&mdash;</strong> O Plano de Atividades, os Relatórios de Atividades e as Avaliações serão anexados ao Termo de Compromisso de Estágio sendo parte integrante e indissociável deste. </p>
+                    <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 3° </span> <strong>&mdash;</strong> As atividades principais poderão ser ampliadas, reduzidas, alteradas ou substituídas, de acordo com a progressividade do Estágio e do Currículo, desde que de comum e prévio acordo entre os partícipes.</p>
+                    <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 4° </span> <strong>&mdash;</strong> É assegurado ao <strong>ESTAGIÁRIO</strong> recesso das atividades, preferencialmente em período de férias escolares, nos termos do art. 13 da Lei n° 11.788/08.</p>
+                    <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 5° </span> <strong>&mdash;</strong> Nos períodos estabelecidos no calendário escolar como de avaliação é assegurado, ao <strong>ESTAGIÁRIO,</strong> a redução da carga horária em pelo menos a metade.</p>
+                    <p class="mt-4" style="text-align: justify;"><span style="text-transform: uppercase; font-weight: bold;">§ 6° </span> <strong>&mdash;</strong> Aplica-se ao <strong>ESTAGIÁRIO</strong> a legislação relacionada à saúde e segurança no trabalho, sendo sua implementação de responsabilidade da <strong>CONCEDENTE.</strong></p>
+                    
+                    <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Quarta</span> <strong>&mdash;</strong> O <strong>ESTAGIÁRIO</strong> desenvolverá suas atividades obrigando-se a:
+                        </p>
+                        <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;"> 
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Cumprir com empenho e interesse a programação estabelecida no Plano de Atividades;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">b) Cumprir as condições fixadas para o Estágio observando as normas de trabalho vigentes na <strong>CONCEDENTE</strong>, preservando o sigilo e a confidencialidade sobre as informações que tenha acesso;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Observar a jornada e o horário ajustados para o Estágio;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Apresentar documentos comprobatórios da regularidade da sua situação escolar, sempre que solicitado pela <strong>CONCEDENTE</strong>;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">e) Manter rigorosamente atualizados seus dados cadastrais e escolares, junto à <strong>CONCEDENTE</strong>;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">f) Informar, de imediato, qualquer alteração na sua situação escolar, tais como: trancamento de matrícula, abandono, conclusão de curso ou transferência de Instituição de Ensino;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">g) Solicitar Relatórios de Atividades elaborados pela <strong>CONCEDENTE</strong> com periodicidade mínima de 06 (seis) meses e, inclusive, sempre que solicitado;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">h) Responder pelas perdas e danos eventualmente causados por inobservância das normas internas da <strong>CONCEDENTE</strong>, ou provocados por negligência ou imprudência.</li>
+                        </ul>
+
+                     <p class="mt-4" style="text-align: justify;">
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Quinta</span> <strong>&mdash; DA CONCEDENTE:</strong>
+                    </p>
+                    <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;"> 
+                        <li style="text-align: justify; margin-bottom: 0.5em;">a) Celebrar o Termo de Compromisso de Estágio com o <strong>ESTAGIÁRIO</strong> e a <strong>Unidade Escolar</strong>, zelando pelo seu fiel cumprimento;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">b) Conceder o Estágio e proporcionar, ao <strong>ESTAGIÁRIO</strong>, condições para o exercício das atividades práticas compatíveis com o seu Plano de Atividades e Perfil Profissional de Conclusão do Curso Técnico em Análises Clínicas;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">c) Designar como Supervisor o (a) funcionário (a)
+                        <strong>{{ dados.supervisor_nome|default:"(Nome do Supervisor na Empresa)" }}</strong>,
+                        de seu quadro de pessoal, para orientá-lo e acompanhá-lo nas atividades do Estágio;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">d) Solicitar ao <strong>ESTAGIÁRIO</strong>, a qualquer tempo, documentos comprobatórios da regularidade da situação escolar, uma vez que trancamento de matrícula, abandono, conclusão de curso ou transferência de Instituição de Ensino constituem motivos de imediata rescisão;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">e) Elaborar e encaminhar para a <strong>UNIDADE ESCOLAR</strong> o Relatório de Atividades, assinado pelo seu Supervisor, com periodicidade de no máximo 06 (seis) meses com vista obrigatória do <strong>ESTAGIÁRIO</strong>;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">f) Entregar, por ocasião do desligamento, Termo de Realização do Estágio com indicação das atividades desenvolvidas, contendo os períodos e a avaliação de desempenho;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">g) Manter em arquivo e à disposição da fiscalização os documentos que comprovem a relação de Estágio;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">h) Permitir o início das atividades de Estágio somente após o recebimento deste instrumento assinado pelos partícipes, estando o estudante assegurado através da apólice do seguro contra acidentes pessoais;</li>
+                        <li style="text-align: justify; margin-bottom: 0.5em;">i) Permitir o acesso do professor orientador de estágio designado pela Unidade Escolar, com finalidades de fiscalização e acompanhamento das atividades do estagiário, bem como do seu ambiente de trabalho, em qualquer momento, sem a necessidade de aviso prévio por parte da instituição de ensino.</li>
+                    </ul>
+
+                     <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;"> Cláusula Sexta</span> <strong>&mdash; DA UNIDADE ESCOLAR:</strong>
+                        </p>
+                         <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;">
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Indicar, no Plano de Atividades, as atividades descritas no Catálogo Nacional dos Cursos Técnicos (Perfil Profissional de Conclusão), as condições de adequação do estágio à proposta pedagógica do curso, à etapa e modalidade da formação profissional, o horário e calendário escolar; avaliar as instalações da parte concedente do Estágio e sua adequação à formação cultural e profissional do educando;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">
+                                    b) Indicar, como Professor Orientador de Estágio, o /a Profª
+                            <strong>{{ estagio.orientador.get_full_name|default:"(Professor ainda não selecionado)" }}</strong>
+                            como responsável pelo acompanhamento e avaliação das atividades do <strong>ESTAGIÁRIO</strong>; 
+                            </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Comunicar à <strong>CONCEDENTE</strong>, no início do período letivo, as datas de realização das avaliações escolares;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Exigir do aluno a apresentação periódica, em prazo de seis meses, de Relatório de Atividades;</li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">e) Zelar pelo cumprimento do Termo de Compromisso de Estágio, reorientando o <strong>ESTAGIÁRIO</strong> para outro local em caso de descumprimento de suas normas; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">f) Avaliar a realização do Estágio curricular do aluno por meio de Instrumentos de Avaliação.</li>
+                         </ul>
+                    <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Sétima</span> <strong>&mdash;</strong>
+                            Na vigência do presente Termo, o <strong>ESTAGIÁRIO</strong> estará incluído na cobertura do seguro contra acidentes pessoais, conforme certificado individual de seguro, Apólice nº
+                        <strong>{{ dados.apolice_numero|default:"(Número da Apólice)" }}</strong>,
+                        Empresa: <strong>{{ dados.apolice_empresa|default:"(Nome da Seguradora)" }}</strong>;
+                    </p>
+                    <p class="mt-4" style="text-align: justify;">
+                            <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Oitava</span> <strong>&mdash;</strong> O término do Estágio ocorrerá nos seguintes casos:</p>
+                         <ul style="list-style: none; padding-left: 2em; margin-top: 0.5em; margin-bottom: 1em;">
+                            <li style="text-align: justify; margin-bottom: 0.5em;">a) Automaticamente, ao término do período previsto para sua realização; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">b) Desistência do Estágio ou rescisão do Termo de Compromisso de Estágio, por decisão voluntária de qualquer dos partícipes, mediante comunicação por escrito com antecedência de 05 (cinco) dias; </li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">c) Pelo trancamento da matrícula, abandono, desligamento ou conclusão do curso na <strong>Unidade Escolar;</strong></li>
+                            <li style="text-align: justify; margin-bottom: 0.5em;">d) Pelo descumprimento total ou parcial das condições do presente Termo de Compromisso de Estágio, bem como da Lei nº 11.788/2008;</li>
+                         </ul>
+
+                    <p class="mt-4" style="text-align: justify;">
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Nona</span> <strong>&mdash;</strong>
+                        O <strong>ESTAGIÁRIO</strong> não receberá nenhum valor a título de bolsa-auxílio.
+                    </p>
+
+                    <p class="mt-4" style="text-align: justify;">
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Décima</span> <strong>&mdash;</strong>
+                        O Estágio não cria vínculo empregatício de qualquer natureza, desde que observados as disposições da Lei n° 11.788/08 e do presente Termo de Compromisso.
+                    </p>
+
+                    <p class="mt-4" style="text-align: justify;">
+                        <span style="text-transform: uppercase; text-decoration: underline; font-weight: bold;">Cláusula Décima Segunda </span> <strong>&mdash;</strong>
+                        Fica eleito o Foro da Justiça de Guanambi (BA), com renúncia de qualquer outro, por mais privilegiado que seja, para dirimir quaisquer dúvidas ou controvérsias em decorrência do presente Termo de Compromisso de Estágio que não puderem ser decididas diretamente pelos partícipes. E assim, justos e acordados, assinam este instrumento em três vias de igual teor e forma. 
+                    </p>
+
+                    <p class="mt-5 text-center">___________________ de _____________ de _________</p>
+
+                    <h6 class="text-center text-muted small mt-5 pt-3" style="text-transform: uppercase;">Assinaturas</h6>
+                    <div class="row signature-block">
+                        <div class="col-12 text-center">
+                            <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                            <p class="small text-dark fw-bold mb-0">Responsável Legal do Estagiário</p>
+                        </div>
+                    </div>
+                    <div class="row signature-block">
+                         <div class="col-6 text-center">
+                            <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                            <p class="small text-dark fw-bold mb-0">Supervisor do Estágio</p>
+                            <p class="small text-dark fw-bold mb-0">(Funcionário da Concedente)</p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                            <p class="small text-dark fw-bold mb-0">Representante da Concedente</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-5 border-secondary">
+                        <div class="card-header"> 
+                            <h6 class="mb-0">Anexo PDF</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center"> 
+                            {% if documento.pdf_supervisor_assinado %}
+                                {% if pdf_existe %}
+                                        <p class="small mt-2 mb-0">
+                                            <i class="fas fa-check-circle text-success me-1"></i>
+                                            Ficheiro anexado:
+                                            <a href="{{ documento.pdf_supervisor_assinado.url }}" target="_blank" class="fw-bold">
+                                                {{ documento.pdf_supervisor_assinado.name|cut:"pdfs_assinados/" }}
+                                            </a>
+                                            <span class="text-muted">
+                                                ({{ documento.pdf_supervisor_assinado.size|filesizeformat }})
+                                            </span>
+
+                                            <div class="d-flex align-items-center gap-2">
+                                                <a href="{{ documento.pdf_supervisor_assinado.url }}" target="_blank" class="btn btn-outline-success btn-sm ms-2">
+                                                    <i class="fas fa-file-pdf"></i> Ver PDF
+                                                </a>
+                                                
+                                                <form action="{% url 'remover_pdf_assinado' documento.id %}" method="post"> 
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm ms-2" 
+                                                            onclick="return confirm('Tem certeza que deseja remover o PDF anexado?');">
+                                                        <i class="fas fa-trash-alt"></i> Remover
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </p>
+                                {% else %}
+                                        <p class="small text-warning mb-0">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            O arquivo anexado foi removido do servidor.
+                                        </p>
+                                {% endif %}
+                            {% else %}
+                                <p class="small text-muted mb-0">
+                                    Nenhum PDF com assinaturas manuais foi anexado ainda.
+                                </p>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-5 border-secondary">
+                        <div class="card-header"> 
+                            <h6 class="mb-0">Assinatura Eletrônica</h6>
+                        </div>
+                        <div class="card-body">
+                            {% include 'estagio/includes/assinaturas_bloco.html' with documento=documento %}
+                        </div>
+                    </div>
+
+                    <div class="mt-5" style="border-top: 1px solid #ccc; padding-top: 10px; margin-top: 3rem; font-size: 12pt; text-align: center; font-family: 'Times New Roman', Times, serif;">
+                        <p class="mb-0">
+                            Av. Luiz Viana Filho, 5ª Avenida, n° 550, Centro Administrativo da Bahia. CEP: 41.746-009.
+                        </p>
+                        <p class="mb-0">
+                            Salvador – Bahia - Brasil. Tel.: 55 71 3115–9018. Fax: 55 71 3115-9017 | www.educacao.ba.gov.br
+                        </p>
+                    </div>
+
+
+                </div> 
+            </div> 
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+{{ block.super }}
+
+<script>
+function printDocumento() {
+    const printArea = document.getElementById('print-area');
+    
+    if (!printArea) {
+        console.error('Área de impressão (#print-area) não encontrada.');
+        alert('Não foi possível encontrar a área do documento para impressão.');
+        return;
+    }
+
+    const body = document.body;
+    const originalBodyContent = body.innerHTML;
+    const scrollY = window.scrollY;
+
+    try {
+        body.innerHTML = printArea.outerHTML;
+        window.print();
+    } finally {
+        body.innerHTML = originalBodyContent;
+        window.scrollTo(0, scrollY);
+        setTimeout(() => {
+            window.location.reload();
+        }, 100); 
+    }
+}
+</script>
+
+{% endblock scripts %}
+{% endblock content %}

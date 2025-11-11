@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>core</title>
+
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"> 
+<link id="faviconLink" rel="icon" href="{% static 'assets/icon/icone_preto.ico' %}" type="image/x-icon">
+<link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary justify-content-between px-4 py-3 shadow">
+<span class="navbar-brand mb-0 h1">
+<img src="{%static 'assets/icon/core3.png'%}" width='100%' height='30px' class="me-2">
+</span>
+<div class="d-flex align-items-center">
+  
+  <button id="theme-toggle" class="btn btn-sm btn-outline-secondary me-3 theme-toggle-btn" title="Alternar tema">
+  <i class="bi bi-sun fs-5"></i>
+</button>
+
+<div class="dropdown">
+<button class="btn btn-outline-secondary text-body-emphasis dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="30px" height="30px" viewBox="0 0 512.000000 512.000000" preserveAspectRatio="xMidYMid meet" class="me-2" >
+<g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)" fill="currentColor" stroke="none"> 
+<path d="M2460 4314 c-254 -39 -447 -136 -601 -301 -351 -379 -339 -964 28
+-1331 59 -59 69 -74 55 -79 -9 -3 -55 -22 -102 -43 -192 -85 -362 -202 -520
+-360 -228 -228 -383 -499 -460 -804 -38 -150 -50 -241 -57 -434 l-6 -162 1763
+0 1763 0 -6 163 c-7 192 -19 283 -57 433 -75 299 -230 572 -450 794 -183 185
+-390 321 -628 411 -23 9 -21 12 48 81 466 460 341 1241 -245 1535 -153 77
+-378 119 -525 97z m250 -330 c116 -27 205 -79 300 -174 132 -132 190 -268 190
+-450 0 -182 -58 -318 -190 -450 -132 -132 -268 -190 -450 -190 -182 0 -318 58
+-450 190 -132 132 -190 268 -190 450 0 182 58 318 190 450 93 94 183 147 295
+174 80 19 224 19 305 0z m80 -1599 c418 -67 794 -323 1011 -690 92 -154 167
+-365 185 -518 l7 -57 -1433 0 -1432 0 7 58 c17 140 83 335 160 476 85 153 246
+342 378 445 190 146 419 246 652 285 111 19 349 19 465 1z"></path>
+</g>
+</svg>
+<span>{{ request.user.get_full_name|default:request.user.username }}</span>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li>
+<a class="dropdown-item" href="{% url 'ver_perfil' %}">Ver perfil</a>
+</li>
+<li><hr class="dropdown-divider" /></li>
+<li>
+<a class="dropdown-item text-danger" href="{% url 'logout' %}">Sair</a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+
+<main class="container py-5">
+{% block content %}
+{% endblock content %}
+</main>
+
+<script>
+(function() {
+const getStoredTheme = () => localStorage.getItem('theme');
+const setStoredTheme = theme => localStorage.setItem('theme', theme);
+const htmlElement = document.querySelector('html');
+const toggleElement = document.getElementById('theme-toggle');
+
+const getPreferredTheme = () => {
+const storedTheme = getStoredTheme();
+if (storedTheme) return storedTheme;
+return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
+const setTheme = theme => {
+htmlElement.setAttribute('data-bs-theme', theme);
+updateIcon(theme);
+updateFavicon(theme);
+};
+
+const updateIcon = (theme) => {
+if (!toggleElement) return;
+const icon = toggleElement.querySelector('i');
+const isDark = theme === 'dark';
+icon.className = (isDark ? 'bi bi-moon-fill' : 'bi bi-sun') + ' fs-5';
+};
+        
+const faviconLink = document.getElementById('faviconLink');
+function updateFavicon(theme) {
+const isDark = theme === 'dark';
+faviconLink.href = isDark
+? "{% static 'assets/icon/icone_branco.ico' %}"
+: "{% static 'assets/icon/icone_preto.ico' %}";
+}
+
+toggleElement.addEventListener('click', () => {
+const currentTheme = htmlElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+setStoredTheme(newTheme);
+setTheme(newTheme);
+});
+ 
+const initialTheme = getPreferredTheme();
+setTheme(initialTheme);
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+const storedTheme = getStoredTheme();
+if (!storedTheme) {
+setTheme(getPreferredTheme());
+}
+});
+})();
+</script>
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
+{% block scripts %}
+{% endblock scripts %}
+
+</body>
+</html>

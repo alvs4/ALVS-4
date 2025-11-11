@@ -1,0 +1,55 @@
+{% load static %}
+{% load qr_code %}
+
+{% if documento.assinado_aluno_em or documento.assinado_orientador_em or documento.assinado_diretor_em or documento.pdf_supervisor_assinado %}
+<div>
+    <p class="mb-2 small **text-muted**">Documento assinado eletronicamente por:</p>
+    <ul class="list-unstyled mb-0 small">
+        {% if documento.assinado_aluno_em %}
+        <li>
+            <i class="fas fa-check-circle text-success me-1"></i> 
+            <strong>{{ documento.estagio.aluno.get_full_name }}</strong> ({{ documento.estagio.aluno.numero_matricula }}) - Discente, em {{ documento.assinado_aluno_em|date:"d/m/Y H:i:s" }}
+        </li>
+        {% endif %}
+
+        {% if documento.assinado_orientador_em %}
+        <li>
+            <i class="fas fa-check-circle text-success me-1"></i> 
+            <strong>{{ documento.estagio.orientador.get_full_name|default:'(Orientador não definido)' }}</strong> - Professor Orientador, em {{ documento.assinado_orientador_em|date:"d/m/Y H:i:s" }}
+        </li>
+        {% endif %}
+
+        {% if documento.assinado_diretor_em %}
+        <li>
+            <i class="fas fa-check-circle text-success me-1"></i> 
+            <strong>{{ documento.assinado_por_diretor.get_full_name|default:'(Diretor)' }}</strong> - Diretor(a), em {{ documento.assinado_diretor_em|date:"d/m/Y H:i:s" }}
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+{% url 'verificar_documento_publico' documento.codigo_verificador as verification_url %}
+
+<div class="d-flex justify-content-between align-items-center mt-3 border-top pt-3 border-secondary">
+    <div class="small **text-muted**">
+        Este documento foi emitido pelo Sistema em {{ documento.data_upload|date:"d/m/Y" }}.<br>
+        Para comprovar sua autenticidade, use os dados abaixo: <br>
+        <strong>Código Verificador:</strong> {{ documento.codigo_verificador }}<br>
+
+        <span class="d-block mt-1">
+            <a href="{{ verification_url }}" target="_blank">
+                🔗 Verificar Autenticidade Online
+            </a>
+        </span>
+    </div>
+
+    <div>
+        <img src="{% qr_url_from_text verification_url size=5 %}" 
+              alt="QR Code de Verificação" 
+              style="width: 100px; height: 100px; background-color: white; padding: 5px; border-radius: 5px;">
+    </div>
+</div>
+
+{% else %}
+<p class="text-center small mt-4 **text-muted**">(Documento ainda não assinado eletronicamente)</p>
+{% endif %}

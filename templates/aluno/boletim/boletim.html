@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <h2 class="mb-4">Meu Boletim</h2>
+  <table class="table table-bordered text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Matéria</th>
+        <th>Semestre 1</th>
+        <th>Semestre 2</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in boletim %}
+      <tr>
+        <td>{{ item.materia.nome }}</td>
+
+        <td>
+          {% if item.nota.nota_1_semestre1 is not None or item.nota.nota_2_semestre1 is not None %}
+            {% with item.nota.nota_1_semestre1|default:0 as n1 %}
+            {% with item.nota.nota_2_semestre1|default:0 as n2 %}
+                {{ n1|add:n2|floatformat:0 }}
+            {% endwith %}
+            {% endwith %}
+        {% else %}
+           - 
+        {% endif %}
+        </td>
+
+        <td>
+          {% if item.nota.nota_1_semestre2 is not None or item.nota.nota_2_semestre2 is not None %}
+            {% with item.nota.nota_1_semestre2|default:0 as n1 %}
+            {% with item.nota.nota_2_semestre2|default:0 as n2 %}
+                {{ n1|add:n2|floatformat:0 }}
+            {% endwith %}
+            {% endwith %}
+        {% else %}
+           - 
+        {% endif %}
+        </td>
+
+        <td>
+          {% if item.nota %}
+            {% with item.nota.nota_1_semestre1 as n1s1 %}
+            {% with item.nota.nota_2_semestre1 as n2s1 %}
+            {% with item.nota.nota_1_semestre2 as n1s2 %}
+            {% with item.nota.nota_2_semestre2 as n2s2 %}
+              {% if n1s1 != None and n2s1 != None and n1s2 != None and n2s2 != None %}
+                {% if item.nota.status_final == "Aprovado" %}
+                  <span class="badge bg-success text-white">{{ item.nota.status_final }}</span>
+                {% elif item.nota.status_final == "Reprovado na Final" %}
+                  <span class="badge bg-info text-white">{{ item.nota.status_final }}</span>
+                {% elif item.nota.status_final == "Reprovado" %}
+                  <span class="badge bg-info-subtle text-black">{{ item.nota.status_final }}</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ item.nota.status_final }}</span>
+                {% endif %}
+              {% else %}
+                <span class="badge bg-body text-white">Pendente</span>
+              {% endif %}
+            {% endwith %}{% endwith %}{% endwith %}{% endwith %}
+          {% else %}
+            <span class="badge bg-body text-black">Pendente</span>
+          {% endif %}
+        </td>
+
+        <td>
+          <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalNota{{ forloop.counter }}">
+            Detalhar
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{% url 'aluno_dashboard' %}" class="btn btn-secondary mt-3 align-items-center">
+    <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+      Voltar
+  </a>
+</div>
+
+{% for item in boletim %}
+  <div class="modal fade" id="modalNota{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-secondary text-white">
+          <h5 class="modal-title">Notas - {{ item.materia.nome }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          {% if item.nota %}
+            <h5>Semestre 1</h5>
+            <table class="table table-bordered table-bordered-full notas-table">
+              <tr>
+                <td>N1</td>
+                <td>{% if item.nota.nota_1_semestre1 is not None %}{{ item.nota.nota_1_semestre1|floatformat:0 }}{% else %}-{% endif %}</td>
+              </tr>
+              <tr>
+                <td>N2</td>
+                <td>{% if item.nota.nota_2_semestre1 is not None %}{{ item.nota.nota_2_semestre1|floatformat:0 }}{% else %}-{% endif %}</td>
+              </tr>
+              {% if item.nota.paralela_1 is not None %}
+              <tr>
+                <td>Paralela</td>
+                <td>{{ item.nota.paralela_1|floatformat:0 }}</td>
+              </tr>
+              {% endif %}
+            </table>
+
+            <h5>Semestre 2</h5>
+            <table class="table table-bordered table-bordered-full notas-table">
+              <tr>
+                <td>N1</td>
+                <td>{% if item.nota.nota_1_semestre2 is not None %}{{ item.nota.nota_1_semestre2|floatformat:0 }}{% else %}-{% endif %}</td>
+              </tr>
+              <tr>
+                <td>N2</td>
+                <td>{% if item.nota.nota_2_semestre2 is not None %}{{ item.nota.nota_2_semestre2|floatformat:0 }}{% else %}-{% endif %}</td>
+              </tr>
+              {% if item.nota.paralela_2 is not None %}
+              <tr>
+                <td>Paralela</td>
+                <td>{{ item.nota.paralela_2|floatformat:0 }}</td>
+              </tr>
+              {% endif %}
+            </table>
+
+            {% if item.nota.nota_recuperacao is not None %}
+            <h5>Final</h5>
+            <table class="table table-bordered table-bordered-full notas-table">
+              <tr>
+                <td>Recuperação</td>
+                <td>{{ item.nota.nota_recuperacao|floatformat:0 }}</td>
+              </tr>
+            </table>
+            {% endif %}
+          {% else %}
+            <p class="text-muted">Nenhuma nota registrada para esta matéria.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+{% endblock content %}

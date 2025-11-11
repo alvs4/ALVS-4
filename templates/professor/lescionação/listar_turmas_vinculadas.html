@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Turmas para o Vínculo: {{ vinculo.materia.nome }}</h2>
+    <p class="text-muted">{{ vinculo.ano_modulo }} - {{ vinculo.curso.nome }} ({{ vinculo.modalidade }})</p>
+    
+    <div class="list-group mt-4">
+        {% for turma in turmas %}
+            <a href="{% url 'detalhar_turma_professor' materia_id=vinculo.materia.id turma_id=turma.id %}" class="list-group-item list-group-item-action">
+                Acessar Turma: <strong>{{ turma.turma|default:turma.ano_modulo }}</strong> (Turno: {{ turma.get_turno_display }})
+            </a>
+        {% empty %}
+            <p>Nenhuma turma específica encontrada para este vínculo no momento.</p>
+        {% endfor %}
+    </div>
+     <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary mt-4">Voltar</a>
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends 'base2.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <h2 class="mb-4 text-dark">Meu Perfil</h2>
+            
+            <div class="card p-0 shadow-lg border-0">
+                
+                <div class="bg-secondary text-white p-3 mb-4 d-flex justify-content-between align-items-center rounded-top">
+                    <h4 class="mb-0 text-white">{{ user.get_full_name|default:user.username }}</h4>
+                    <div class="d-flex flex-column align-items-end">
+                        <small class="opacity-75">TIPO DE USUÁRIO</small>
+                        <strong class="h5 mb-0"><span class="badge bg-primary p-2 text-white">{{ user.get_tipo_display|upper }}</span></strong>
+                    </div>
+                </div>
+
+                <div class="px-4 pb-4">
+                    
+                    <h4 class="mb-3 text-secondary border-bottom pb-2">Identificação e Documentação</h4>
+                    
+                    <div class="row g-4 mb-4">
+                        
+                        <div class="col-md-6">
+                            <div class="card card-body shadow-sm h-100 p-0 border-secondary">
+                                <ul class="list-group list-group-flush">
+                                    
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <strong class="text-muted">Matrícula:</strong>
+                                        
+                                        <span class="text-dark">{{ user.numero_matricula|default:"Não informada" }}</span>
+                                    </li>
+                                    
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <strong class="text-muted">Nascimento:</strong>
+                                        {% if user.data_nascimento %}
+                                            <span class="text-dark">{{ user.data_nascimento|date:"d/m/Y" }}</span>
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card card-body shadow-sm h-100 p-0 border-secondary">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <strong class="text-muted">CPF:</strong>
+                                        {% if user.cpf %}
+                                            {% with cpf=user.cpf %}
+                                                <span class="text-dark">{{ cpf|slice:":3" }}.{{ cpf|slice:"3:6" }}.{{ cpf|slice:"6:9" }}-{{ cpf|slice:"9:" }}</span>
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <strong class="text-muted">RG:</strong>
+                                        {% if user.rg %}
+                                            {% with rg=user.rg %}
+                                                <span class="text-dark">{{ rg|slice:":2" }}.{{ rg|slice:"2:5" }}.{{ rg|slice:"5:8" }}-{{ rg|slice:"8:" }}</span>
+                                            {% endwith %}
+                                        {% else %}
+                                            <span class="text-muted">None</span>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if turmas or vinculos or user.eixo %}
+                        <h4 class="mb-3 text-secondary border-bottom pb-2 mt-4">Vínculos Institucionais</h4>
+                        
+                        <div class="card card-body shadow-sm p-0 border-secondary">
+                            <ul class="list-group list-group-flush">
+                                
+                                {% if turmas %}
+                                    <li class="list-group-item bg-light text-secondary">
+                                        <strong class="fw-bold">Turma do Aluno:</strong>
+                                    </li>
+                                    {% for turma in turmas %}
+                                        <li class="list-group-item text-dark">
+                                            {{ turma.curso.nome }} — {{ turma.ano_modulo }} ({{ turma.get_turno_display }}) 
+                                            {% if turma.turma %} - {{ turma.turma }}{% endif %} 
+                                            {% if turma.modalidade %} / {{ turma.modalidade }}{% endif %}
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item text-muted">
+                                            Este aluno não está matriculado em nenhuma turma no momento.
+                                        </li>
+                                    {% endfor %}
+                                {% endif %}
+            
+                                {% if vinculos %}
+                                    <li class="list-group-item bg-light text-secondary {% if turmas %}mt-3 border-top{% endif %}">
+                                        <strong class="fw-bold">Matéria(s) e Vínculo(s) (Professor):</strong>
+                                    </li>
+                                    {% for v in vinculos %}
+                                        <li class="list-group-item text-dark">
+                                            <strong>{{ v.materia.nome }}</strong> — {{ v.curso.nome }} ({{ v.ano_modulo }} - {{ v.get_modalidade_display }})
+                                        </li>
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if user.tipo == 'servidor' or user.tipo == 'diretor' %}
+                                    {% if user.eixo %}
+                                    <li class="list-group-item text-dark d-flex justify-content-between align-items-center">
+                                        <strong>Eixo:</strong>
+                                        <span>{{ user.get_eixo_display }}</span>
+                                    </li>
+                                    {% endif %}
+                                    <li class="list-group-item text-dark d-flex justify-content-between align-items-center">
+                                        <strong>Cargo:</strong>
+                                        <span>{{ user.get_tipo_display }}</span>
+                                    </li>
+                                {% endif %} 
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+                
+            </div> 
+            
+            <div class="mt-4 d-flex justify-content-start gap-2">
+                {% if user.tipo == 'admin' %}
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
+                        <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+                        Voltar
+                    </a>
+                {% elif user.tipo == 'professor' %}
+                    <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary">
+                        <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+                        Voltar
+                    </a>
+                {% elif user.tipo == 'aluno' %}
+                    <a href="{% url 'aluno_dashboard' %}" class="btn btn-secondary">
+                        <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+                        Voltar
+                    </a>
+                
+                {% elif user.tipo == 'servidor' or user.tipo == 'direcao' %}
+                    <a href="{% url 'servidor_dashboard' %}" class="btn btn-secondary">
+                        <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
+                        Voltar
+                    </a>
+                {% endif %}
+
+                {% if user.tipo == 'professor' or user.tipo == 'aluno' or user.tipo == 'servidor' or user.tipo == 'direcao' %}
+                    <a href="{% url 'alterar_senha' %}" class="btn btn-primary">
+                        Alterar Senha
+                    </a>
+                {% endif %}
+            </div>
+            
+        </div>
+    </div>
+{% endblock content %}

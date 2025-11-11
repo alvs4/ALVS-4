@@ -1,0 +1,73 @@
+{% extends 'base.html' %} 
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    
+    <a href="{% url 'servidor_dashboard' %}" class="btn btn-outline-secondary mb-3">
+        Voltar ao Dashboard
+    </a>
+    
+    <h2>Monitoramento de Alunos ({{ eixo_servidor }})</h2>
+    <p class="text-muted">Veja o status dos documentos de estágio de cada aluno do seu eixo.</p>
+    
+    <div class="card shadow-sm">
+        <div class="card-body table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Aluno</th>
+                        <th>Status do Dossiê</th>
+                        <th class="text-center">Documentos Pendentes</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in alunos_data %}
+                    <tr>
+                        <td>{{ item.aluno.get_full_name }}</td>
+                        <td>
+                            {% if item.estagio_iniciado %}
+                                {% if item.estagio_status == 'APROVADO' %}
+                                    <span class="badge bg-success">{{ item.estagio_status }}</span>
+                                {% elif item.estagio_status == 'Rascunho (Aluno preenchendo)' %}
+                                    <span class="badge bg-light text-dark">{{ item.estagio_status }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ item.estagio_status }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-light text-dark">Não Iniciado</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if item.estagio_iniciado %}
+                                {% if item.docs_pendentes_count > 0 %}
+                                    <span class="badge bg-danger rounded-pill">{{ item.docs_pendentes_count }}</span>
+                                {% else %}
+                                    <span class="badge bg-success rounded-pill">0</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-light text-dark">--</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if item.estagio_iniciado %}
+                                <a href="{% url 'servidor_ver_documentos_aluno' item.aluno.id %}" class="btn btn-sm btn-outline-primary">
+                                    Ver Documentos
+                                </a>
+                            {% else %}
+                                <button class="btn btn-sm btn-outline-secondary" disabled>Ver Documentos</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nenhum aluno encontrado para este eixo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock content %}
