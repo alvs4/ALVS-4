@@ -211,6 +211,10 @@ def servidor_visualizar_documento(request, documento_id):
     
     if documento.tipo_documento == 'TERMO_COMPROMISSO':
         template_name = 'estagio/docs/TERMO-DE-COMPROMISSO/TERMO-DE-COMPROMISSO_VISUALIZAR.html'
+        
+    elif documento.tipo_documento == 'FICHA_IDENTIFICACAO':
+        template_name = 'estagio/docs/FICHA-DE-IDENTIFICACAO/FICHA-DE-IDENTIFICACAO_VISUALIZAR.html'
+        
     else:
         messages.info(request, f"A visualização para '{documento.get_tipo_documento_display()}' ainda não foi implementada.")
         return redirect('servidor_ver_documentos_aluno', aluno_id=aluno.id)

@@ -1,0 +1,340 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+
+            {% if request.user.tipo == 'aluno' %}
+                <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'professor' %}
+                <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'direcao' %}
+                <a href="{% url 'servidor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'servidor' %}
+                <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% endif %}
+
+            <div class="d-flex justify-content-end mb-2">
+                {% if documento.status == 'REPROVADO' %}
+                <span class="badge bg-danger text-white p-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Reprovado: Corrija o documento
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="card shadow-sm mb-3 action-buttons-bar">
+                <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h5 class="mb-0 fs-6 ms-2">Visualizar: Ficha de Identificação</h5>
+                    </div>
+
+                    {% if not is_public_verification %}
+                        <div class="ms-auto d-flex align-items-center gap-2">
+
+                            {% if request.user.tipo == 'aluno' %}
+                                
+                                {% if documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
+                                
+                                    <a href="{% url 'preencher_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm" title="Editar os dados ou anexar PDF">
+                                        <i class="fas fa-edit me-1"></i> Editar
+                                    </a>
+                                    
+                                    <form action="{% url 'assinar_documento_aluno' documento.id %}" method="POST" class="d-inline"
+                                        onsubmit="return confirm('Você confirma que leu e concorda com todos os termos deste documento? Esta ação não pode ser desfeita.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary btn-sm" title="Assinar eletronicamente">
+                                            <i class="fas fa-pen-alt me-1"></i> Assinar e Encaminhar
+                                        </button>
+                                    </form>
+                                
+                                {% else %}
+                                    <span class="badge bg-success text-white p-2">
+                                        <i class="fas fa-check me-1"></i> Você já assinou
+                                    </span>
+                                {% endif %}
+                            
+                            {% elif request.user.tipo == 'professor' %}
+                                
+                                {% if pode_assinar_orientador %}
+                                    <form action="{% url 'professor_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                        onsubmit="return confirm('Assinar este documento? Esta ação será registrada com seu nome e data.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary btn-sm shadow">
+                                            <i class="fas fa-pen-alt me-1"></i> Assinar como Orientador
+                                        </button>
+                                    </form>
+                                {% elif documento.assinado_orientador_em %}
+                                    <span class="badge bg-success text-white p-2">
+                                        <i class="fas fa-check me-1"></i> Assinado por você
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark p-2">
+                                        Não requer sua ação
+                                    </span>
+                                {% endif %}
+
+                            {% elif request.user.tipo == 'direcao' %}
+                                
+                                {% if pode_assinar_direcao %}
+                                    <form action="{% url 'direcao_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                        onsubmit="return confirm('Assinar este documento como Diretor(a)? Esta ação será registrada com seu nome e data.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary btn-sm shadow">
+                                            <i class="fas fa-pen-alt me-1"></i> Assinar como Direção
+                                        </button>
+                                    </form>
+                                {% elif documento.assinado_diretor_em %}
+                                    <span class="badge bg-success text-white p-2">
+                                        <i class="fas fa-check me-1"></i> Assinado pela Direção
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark p-2">
+                                        Não requer sua ação
+                                    </span>
+                                {% endif %}
+
+                            {% elif request.user.tipo == 'servidor' %}
+                                
+                                {% if pode_reprovar_servidor %}
+                                <form action="{% url 'servidor_reprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                        onsubmit="return confirm('Tem certeza que deseja REPROVAR este documento? As assinaturas serão limpas e ele voltará ao aluno para correção.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Reprovar este documento">
+                                        <i class="fas fa-times me-1"></i> Reprovar
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+                                {% if pode_aprovar_servidor %}
+                                <form action="{% url 'servidor_aprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                        onsubmit="return confirm('Tem certeza que deseja APROVAR este documento? Esta ação o marcará como Concluído.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm shadow-sm" title="Aprovar Documento">
+                                        <i class="fas fa-check me-1"></i> Aprovar Documento
+                                    </button>
+                                </form>
+                                {% else %}
+                                    {% if documento.status == 'CONCLUIDO' %}
+                                    <span class="badge bg-success text-white p-2">
+                                        <i class="fas fa-check me-1"></i> Aprovado
+                                    </span>
+                                    {% endif %}
+                                {% endif %}
+
+                            {% endif %}
+                        {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div id="print-area" class="card shadow-sm">
+                    <div class="card-body p-4 p-md-5 document-body">
+
+                        <div class="text-center mb-4">
+                            <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP"
+                                style="width: 100%;">
+                        </div>
+
+                    <div class="row align-items-center mb-4">
+                        <div class="col-9 text-center">
+                            <h4 style="margin:0; font-size:14px"><strong>CENTRO ESTADUAL DE EDUCAÇÃO PROFISSIONAL</strong></h4>
+                            <h4 style="margin:0; font-size:14px"><strong>EM SAÚDE E GESTÃO – GUANAMBI/BA</strong></h4>
+                            <p style="margin:0; font-size:14px;">Formando cidadãos para o mundo do trabalho!</p>
+                            
+                            <h5 class="mt-3 fw-bold">FICHA DO ALUNO(A)</h5>
+                            <h5 class="text-center fw-bold mb-4" style="text-transform: uppercase; margin-top:40px; font-size:18px;">
+                                CURSO: TÉCNICO EM {{ aluno.alunoturma_set.first.turma.curso.nome }}
+                            </h5>
+                        </div>
+
+                        <div class="col-3 d-flex justify-content-center">
+                            <div style="
+                                width: 140px; 
+                                height: 200px; 
+                                border: 3px solid #0b498bff; 
+                                margin-top: -50px; 
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center; 
+                                font-size: 12px; 
+                                color: #000; 
+                                background-color: #fff;">
+                                
+                                {% if documento.foto_3x4 %}
+                                    <img src="{{ documento.foto_3x4.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                {% else %}
+                                    FOTO 3x4
+                                {% endif %}
+                                
+                            </div>
+                        </div>
+                    </div>
+
+                        <div class="row">
+                            <div class="col-9">
+                                <h6 class="fw-bold text-uppercase mb-3" style='font-size:18px;'>Identificação:</h6>
+
+                                <div class="mb-1">
+                                    Nome: {{ aluno.get_full_name|default:"(Nome Completo)" }}
+                                    <span class="ms-3">Série: {{ aluno.alunoturma_set.first.turma.ano_modulo|default:"(Série)" }}</span>
+                                    <span class="ms-3">Turma: {{ aluno.alunoturma_set.first.turma.turma|default:"(Turma)" }}</span>
+                                </div>
+
+                                <div class="mb-1">
+                                    Turno: {{ aluno.alunoturma_set.first.turma.get_turno_display|default:"(Turno)" }}
+                                    <span class="ms-4">Modalidade: {{ aluno.alunoturma_set.first.turma.modalidade|default:"(Modalidade)" }}</span>
+                                </div>
+
+                                <div class="mb-1">
+                                    Cidade de Nascimento: {{ aluno.cidade_nascimento|default:"(Cidade/Estado)" }}
+                                </div>
+
+                                <div class="mb-1">
+                                    Data de nascimento: {{ aluno.data_nascimento|date:"d/m/Y"|default:"--/--/----" }}
+                                </div>
+
+                                {% with rg=aluno.rg %}
+                                <div class="mb-1">
+                                    RG:
+                                    {% if rg %}
+                                        {{ rg|slice:":2" }}.{{ rg|slice:"2:5" }}.{{ rg|slice:"5:8" }}-{{ rg|slice:"8:" }}
+                                    {% else %}
+                                        ---
+                                    {% endif %}
+                                    <span class="ms-3">Órgão: {{ aluno.orgao|default:"SSP-BA" }}</span>
+                                </div>
+                                {% endwith %}
+
+                                <div class="mb-1">
+                                    Data de expedição: {{ aluno.data_expedicao|date:"d/m/Y"|default:"--/--/----" }}
+                                </div>
+
+                                {% with cpf=aluno.cpf %}
+                                <div class="mb-1">
+                                    CPF:
+                                    {% if cpf %}
+                                        {{ cpf|slice:":3" }}.{{ cpf|slice:"3:6" }}.{{ cpf|slice:"6:9" }}-{{ cpf|slice:"9:" }}
+                                    {% else %}
+                                        ---
+                                    {% endif %}
+                                </div>
+                                {% endwith %}
+
+                                <div class="mb-3">
+                                    Nº de matrícula: {{ aluno.numero_matricula|default:"(Matrícula)" }}
+                                </div>
+
+                                <div class="mb-1">Pai: {{ aluno.nome_pai|default:"(Nome do Pai)" }}</div>
+                                <div class="mb-1">Mãe: {{ aluno.nome_mae|default:"(Nome da Mãe)" }}</div>
+                                <div class="mb-1">Responsável pela matrícula: {{ aluno.responsavel_matricula|default:"(Responsável)" }}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6 class="fw-bold text-uppercase" style='font-size:18px;'>Endereço:</h6>
+                            <div class="mb-1">
+                                {{ aluno.endereco_rua|default:"(Rua)" }} n° {{ aluno.endereco_numero|default:"(N°)" }}
+                            </div>
+                            <div class="mb-1">
+                                Bairro: {{ aluno.endereco_bairro|default:"(Bairro)" }}
+                                <span class="ms-3">Cidade: {{ aluno.endereco_cidade|default:"(Cidade)" }}</span>
+                                <span class="ms-3">CEP: {{ aluno.endereco_cep|default:"(CEP)" }}</span>
+                            </div>
+                            <div class="mb-1">
+                                Fone: {{ aluno.telefone|default:"(Telefone)" }}
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <h6 class="fw-bold text-uppercase" style='font-size:18px;'>Atividade Extra-Escola:</h6>
+                            
+                            <div class="d-flex justify-content-between mb-1" style="max-width: 80%;">
+                                <div>Autônomo/ Empregado: {{ dados.tipo_atividade|default:"________________" }}</div>
+                                <div>Empresa: {{ dados.empresa|default:"________________" }}</div>
+                            </div>
+
+                            <div class="d-flex mb-1">
+                                <div class="me-4">Carga horária: {{ dados.carga_horaria|default:"_______" }}</div>
+                                <div>Função: {{ dados.funcao|default:"__________________________________" }}</div>
+                            </div>
+
+                            <div class="mb-1">
+                                Rua/ Av./ Pça: {{ dados.empresa_rua|default:"________________________________________________" }}
+                            </div>
+
+                            <div class="d-flex mb-1">
+                                <div class="me-3">Nº {{ dados.empresa_numero|default:"_____" }}</div>
+                                <div class="me-3">Bairro: {{ dados.empresa_bairro|default:"____________" }}</div>
+                                <div class="me-3">Cidade: {{ dados.empresa_cidade|default:"____________" }}</div>
+                                <div>CEP: {{ dados.empresa_cep|default:"__________" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <h6 class="fw-bold text-uppercase">Observação:</h6>
+                            <div style="border-bottom: 1px solid #000; min-height: 25px; margin-bottom: 5px;">{{ dados.observacao|default:"" }}</div>
+                            <div style="border-bottom: 1px solid #000; min-height: 25px; margin-bottom: 5px;"></div>
+                            <div style="border-bottom: 1px solid #000; min-height: 25px; margin-bottom: 5px;"></div>
+                        </div>
+
+                        <p class="mt-5 mb-4 text-end">Guanambi, _______ de __________ de ________</p>
+
+                        <h6 class="text-center text-muted small mt-5 pt-3" style="text-transform: uppercase;">Assinatura</h6>
+                        <div class="card mt-5 border-secondary">
+                            <div class="card-header">
+                                <h6 class="mb-0">Assinatura Eletrônica</h6>
+                            </div>
+                            <div class="card-body">
+                                {% include 'estagio/includes/assinaturas_bloco.html' with documento=documento %}
+                            </div>
+                        </div>
+
+                        <div class="mt-5 text-center" style="font-size: 12pt; font-family: sans-serif;">
+                            <p class="mb-0 fw-bold fst-italic">
+                                Av. Santos Dumont, s/n Centro – Guanambi/BA
+                            </p>
+                            <p class="mb-0 fw-bold fst-italic">
+                                77-3451-5096/3451-5444 (Telefone fixo e WhatsApp)
+                            </p>
+                            <p class="mb-0 fw-bold fst-italic">
+                                ceep.saudeegestao@educacao.ba.gov.br
+                            </p>
+                            <p class="mb-0 fw-bold fst-italic">
+                                https://www.ceep-guanambi.com
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% block scripts %}
+{{ block.super }}
+
+<script>
+function printDocumento() {
+    const area = document.getElementById('print-area');
+    const body = document.body;
+    const original = body.innerHTML;
+
+    body.innerHTML = area.outerHTML;
+    window.print();
+    body.innerHTML = original;
+    window.location.reload();
+}
+</script>
+
+{% endblock scripts %}
+{% endblock content %}
