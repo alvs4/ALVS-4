@@ -258,24 +258,24 @@
                             <h6 class="fw-bold text-uppercase" style='font-size:18px;'>Atividade Extra-Escola:</h6>
                             
                             <div class="d-flex justify-content-between mb-1" style="max-width: 80%;">
-                                <div>Autônomo/ Empregado: {{ dados.tipo_atividade|default:"________________" }}</div>
-                                <div>Empresa: {{ dados.empresa|default:"________________" }}</div>
+                                <div><strong>Autônomo/ Empregado:</strong> {{ dados.atividade_tipo|default:"________________" }}</div>
+                                <div><strong>Empresa:</strong> {{ dados.atividade_empresa|default:"________________" }}</div>
                             </div>
 
                             <div class="d-flex mb-1">
-                                <div class="me-4">Carga horária: {{ dados.carga_horaria|default:"_______" }}</div>
-                                <div>Função: {{ dados.funcao|default:"__________________________________" }}</div>
+                                <div class="me-4"><strong>Carga horária:</strong> {{ dados.atividade_carga_horaria|default:"_______" }}</div>
+                                <div><strong>Função:</strong> {{ dados.atividade_funcao|default:"__________________________________" }}</div>
                             </div>
 
                             <div class="mb-1">
-                                Rua/ Av./ Pça: {{ dados.empresa_rua|default:"________________________________________________" }}
+                                <strong>Rua/ Av./ Pça:</strong> {{ dados.atividade_rua|default:"________________________________________________" }}
                             </div>
 
                             <div class="d-flex mb-1">
-                                <div class="me-3">Nº {{ dados.empresa_numero|default:"_____" }}</div>
-                                <div class="me-3">Bairro: {{ dados.empresa_bairro|default:"____________" }}</div>
-                                <div class="me-3">Cidade: {{ dados.empresa_cidade|default:"____________" }}</div>
-                                <div>CEP: {{ dados.empresa_cep|default:"__________" }}</div>
+                                <div class="me-3"><strong>Nº</strong> {{ dados.atividade_numero|default:"_____" }}</div>
+                                <div class="me-3"><strong>Bairro:</strong> {{ dados.atividade_bairro|default:"____________" }}</div>
+                                <div class="me-3"><strong>Cidade:</strong> {{ dados.atividade_cidade|default:"____________" }}</div>
+                                <div><strong>CEP:</strong> {{ dados.atividade_cep|default:"__________" }}</div>
                             </div>
                         </div>
 

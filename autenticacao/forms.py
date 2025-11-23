@@ -300,6 +300,8 @@ class TermoCompromissoForm(forms.Form):
     """
     Este formulário representa os campos EDITÁVEIS
     do documento TERMO-DE-COMPROMISSO.html.
+    Todos os campos foram configurados como opcionais no __init__
+    e no método clean para permitir o salvamento de rascunhos.
     """
     
     # Dados da Empresa (Concedente)
@@ -311,8 +313,8 @@ class TermoCompromissoForm(forms.Form):
     concedente_cidade_uf = forms.CharField(label="Cidade-UF", max_length=100) 
     concedente_cep = forms.CharField(label="CEP", max_length=9) 
     concedente_representante = forms.CharField(label="Nome do Representante da Concedente")
-    concedente_email = forms.EmailField(label="Email da Concedente", required=False)
-    concedente_telefone = forms.CharField(label="Telefone da Concedente", required=False)
+    concedente_email = forms.EmailField(label="Email da Concedente")
+    concedente_telefone = forms.CharField(label="Telefone da Concedente")
 
     # Dados do Supervisor
     supervisor_nome = forms.CharField(label="Nome do Supervisor (funcionário da Concedente)")
@@ -331,7 +333,7 @@ class TermoCompromissoForm(forms.Form):
     orientador = ProfessorOrientadorChoiceField(
         queryset=CustomUser.objects.filter(tipo='professor').order_by('first_name', 'last_name'),
         label="Professor(a) Orientador(a) da Escola",
-        required=True, 
+        required=True, # Será sobrescrito no __init__
         empty_label="-- Selecione o Professor --",
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'}) 
     )
@@ -343,13 +345,16 @@ class TermoCompromissoForm(forms.Form):
         widget=forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'})
     )
     
-    
     # MÉTODO __init__
     def __init__(self, *args, **kwargs):
         orientador_initial = kwargs.pop('orientador_initial', None)
         super().__init__(*args, **kwargs)
         
+        # Percorre todos os campos do formulário
         for field_name, field in self.fields.items():
+            
+            # 1. Torna todos os campos opcionais na definição do campo
+            field.required = False
             
             if field_name not in ['orientador', 'anexo_assinaturas']: 
                 attrs = {'class': 'inline-input'}
@@ -368,12 +373,40 @@ class TermoCompromissoForm(forms.Form):
             
             elif field_name == 'orientador' and orientador_initial:
                  self.initial['orientador'] = orientador_initial
+
+    # === NOVO MÉTODO CLEAN (A SOLUÇÃO) ===
+    def clean(self):
+        """
+        Limpa erros de validação para campos vazios.
+        Isso força o Django a aceitar o formulário como válido mesmo que
+        campos numéricos ou de data estejam em branco ou inválidos.
+        """
+        cleaned_data = super().clean()
+        
+        # Lista de campos que deram erro
+        campos_com_erro = list(self.errors.keys())
+        
+        for field in campos_com_erro:
+            # Verifica o valor enviado pelo usuário (raw data)
+            valor_enviado = self.data.get(field)
+            
+            # Se o valor for vazio, None ou uma string vazia
+            if not valor_enviado:
+                # Remove o erro da lista de erros do formulário
+                del self._errors[field]
+                
+                # Garante que no cleaned_data o valor seja None (para salvar no banco sem quebrar)
+                if field in cleaned_data:
+                    cleaned_data[field] = None
+                else:
+                    cleaned_data[field] = None
+                    
+        return cleaned_data
                  
 class FichaIdentificacaoForm(forms.Form):
     """
     Formulário para os campos preenchíveis da Ficha de Identificação.
-    A maioria dos dados vem do 'CustomUser', 
-    mas a ATIVIDADE EXTRA-ESCOLA é preenchida aqui.
+    Permite salvar rascunhos incompletos.
     """
     ATIVIDADE_CHOICES = (
         ('NENHUMA', 'Não Possui'),
@@ -390,67 +423,70 @@ class FichaIdentificacaoForm(forms.Form):
     
     atividade_carga_horaria = forms.CharField(
         label="Carga Horária (Ex: 20h/semana)", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     atividade_empresa = forms.CharField(
         label="Empresa", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     atividade_funcao = forms.CharField(
         label="Função", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     
     # Endereço da Atividade
     atividade_rua = forms.CharField(
         label="Rua/ Av./ Pça", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     atividade_numero = forms.CharField(
         label="N°", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     atividade_bairro = forms.CharField(
         label="Bairro", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     atividade_cidade = forms.CharField(
         label="Cidade", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
     atividade_cep = forms.CharField(
         label="CEP", 
-        required=False,
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '00000-000'})
     )
     
     foto_3x4 = forms.ImageField(
         label="Foto 3x4 (Opcional)",
-        required=False,
         widget=forms.ClearableFileInput(attrs={'class': 'form-control form-control-sm'})
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Torna todos os campos opcionais para permitir Rascunho
+        for field in self.fields.values():
+            field.required = False
+
     def clean(self):
         cleaned_data = super().clean()
-        atividade_tipo = cleaned_data.get('atividade_tipo')
-
-        # Se a atividade NÃO for 'NENHUMA', alguns campos podem se tornar obrigatórios
-        # (Esta é uma lógica opcional, mas recomendada)
-        if atividade_tipo in ['AUTONOMO', 'EMPREGADO']:
-            campos_obrigatorios = ['atividade_empresa', 'atividade_funcao', 'atividade_carga_horaria']
-            for campo in campos_obrigatorios:
-                if not cleaned_data.get(campo):
-                    self.add_error(campo, 'Este campo é obrigatório se você estiver empregado ou for autônomo.')
         
-        # Se for 'NENHUMA', limpa os outros campos
-        elif atividade_tipo == 'NENHUMA':
+        # 1. Lógica de Limpeza de Erros (Rascunho)
+        erros_para_remover = []
+        for field, errors in self.errors.items():
+            valor = self.data.get(field)
+            # Se estiver vazio, remove o erro (permite salvar vazio)
+            if not valor:
+                erros_para_remover.append(field)
+        
+        for field in erros_para_remover:
+            del self._errors[field]
+            if field in cleaned_data:
+                cleaned_data[field] = None
+
+        # 2. Lógica de Negócio (Só valida se for submissão final, opcionalmente)
+        # Mantemos a lógica original de limpar campos se for 'NENHUMA'
+        atividade_tipo = cleaned_data.get('atividade_tipo')
+        if atividade_tipo == 'NENHUMA':
             campos_atividade = [
                 'atividade_carga_horaria', 'atividade_empresa', 'atividade_funcao',
                 'atividade_rua', 'atividade_numero', 'atividade_bairro', 
@@ -459,4 +495,118 @@ class FichaIdentificacaoForm(forms.Form):
             for campo in campos_atividade:
                 cleaned_data[campo] = ''
                 
+        return cleaned_data
+    
+class FichaPessoalForm(forms.Form):
+    # Dados do Estágio / Cabeçalho
+    data_inicio = forms.DateField(
+        label="Início do Estágio", 
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'})
+    )
+    data_fim = forms.DateField(
+        label="Fim do Estágio", 
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'})
+    )
+    
+    # Dados da Concedente (Empresa)
+    concedente_nome = forms.CharField(
+        label="Concedente (Empresa)", 
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
+    )
+    concedente_municipio = forms.CharField(
+        label="Município", 
+        initial="Guanambi",
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
+    )
+    concedente_cnpj = forms.CharField(
+        label="CNPJ",
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'data-mask': '00.000.000/0000-00'})
+    )
+    concedente_email = forms.EmailField(
+        label="E-mail da Empresa",
+        widget=forms.EmailInput(attrs={'class': 'form-control form-control-sm'})
+    )
+    
+    # Dados do Supervisor
+    supervisor_nome = forms.CharField(
+        label="Nome do Supervisor", 
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
+    )
+    supervisor_telefone = forms.CharField(
+        label="Telefone do Supervisor", 
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
+    )
+    
+    total_horas = forms.CharField(
+        label="Total de Horas Cumpridas",
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Ex: 100 horas'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Torna todos os campos opcionais
+        for field in self.fields.values():
+            field.required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # Limpa erros de validação para campos vazios (Rascunho)
+        erros_para_remover = []
+        for field in self.errors:
+            if not self.data.get(field):
+                erros_para_remover.append(field)
+        
+        for field in erros_para_remover:
+            if field in self._errors:
+                del self._errors[field]
+            if field in cleaned_data:
+                cleaned_data[field] = None
+                
+        return cleaned_data
+    
+class AvaliacaoOrientadorForm(forms.Form):
+    OPCOES_AVALIACAO = [
+        ('OTIMO', 'Ótimo'),
+        ('BOM', 'Bom'),
+        ('REGULAR', 'Regular'),
+        ('INSUFICIENTE', 'Insuficiente'),
+    ]
+
+    # Tabela 1: Avaliação da Concedente (Empresa)
+    infraestrutura = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    atividades_exercidas = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    organizacao_empresa = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    supervisao_estagio = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    avaliacao_final_empresa = forms.CharField(label="Avaliação Final (Nota)", required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'style': 'width: 100px;'}))
+
+    total_horas = forms.CharField(label="Total de Horas Cumpridas", required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}))
+
+    # Tabela 2: Avaliação do Estagiário (Aspectos)
+    assiduidade = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    pontualidade = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    interesse = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    organizacao_aluno = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    responsabilidade = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    postura = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    relacionamento = forms.ChoiceField(choices=OPCOES_AVALIACAO, widget=forms.RadioSelect, required=False)
+    avaliacao_final_aluno = forms.CharField(label="Avaliação Final (Nota)", required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'style': 'width: 100px;'}))
+
+    observacoes = forms.CharField(label="Observações", required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.required = False
+
+    def clean(self):
+        # (A mesma lógica de limpeza que usamos nos outros forms)
+        cleaned_data = super().clean()
+        erros_para_remover = []
+        for field in self.errors:
+            if not self.data.get(field):
+                erros_para_remover.append(field)
+        for field in erros_para_remover:
+            if field in self._errors: del self._errors[field]
+            if field in cleaned_data: cleaned_data[field] = None
         return cleaned_data

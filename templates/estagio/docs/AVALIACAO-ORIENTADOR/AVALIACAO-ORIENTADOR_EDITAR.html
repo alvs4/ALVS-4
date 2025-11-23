@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<style>
+    /* === Estilos Padronizados (Igual à Ficha Pessoal) === */
+    .ficha-box {
+        border: 1px solid #000;
+        padding: 5px 10px;
+        margin-bottom: -1px; /* Para bordas compartilhadas */
+        font-size: 10pt; 
+        font-family: Arial, sans-serif;
+        background-color: #fff;
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+    }
+    .ficha-label {
+        font-weight: bold;
+        margin-right: 5px;
+        white-space: nowrap;
+    }
+    
+    /* Estilos da Tabela de Avaliação */
+    .table-aval th, .table-aval td { text-align: center; vertical-align: middle; }
+    .table-aval td:first-child { text-align: left; font-weight: bold; }
+    
+    /* Ajuste dos Radio Buttons para ficarem centralizados */
+    .form-check-input { margin-top: 0; }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+
+            <form id="form-avaliacao" method="post">
+                {% csrf_token %}
+            
+            <div class="card shadow-sm mb-3 sticky-top" style="top: 10px; z-index: 1000;">
+                <div class="card-body d-flex justify-content-between align-items-center py-2">
+                    <div>
+                        <h5 class="mb-0 fs-6">Editando: Avaliação do Orientador</h5>
+                        <small class="text-muted">Preencha os dados da avaliação do concedente e estagiário.</small>
+                    </div>
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        {% if ficha_pessoal_id %}
+                            <a href="{% url 'professor_visualizar_documento' ficha_pessoal_id %}" target="_blank" class="btn btn-secondary btn-sm" title="Consultar atividades realizadas">
+                                <i class="fas fa-external-link-alt me-1"></i> Ver Ficha Pessoal
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'professor_visualizar_documento' documento.id %}" class="btn btn-secondary btn-sm">Cancelar</a>
+                        
+                        <button type="submit" form="form-avaliacao" name="salvar_apenas" class="btn btn-primary btn-sm">Salvar</button>
+                    </div>
+                </div>
+            </div>
+                
+                <div class="card shadow-sm">
+                    <div class="card-body p-4 p-md-5 document-body">
+
+                        <div class="text-center mb-4">
+                            <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho" style="width: 100%;">
+                            <h5 class="fw-bold mt-3 text-uppercase">Avaliação de Desempenho do Estagiário</h5>
+                        </div>
+
+                        <div class="row g-0 mb-4">
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Concedente:</span> 
+                                {{ dados_termo.concedente_nome|default:estagio.supervisor_empresa }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Município:</span> 
+                                {{ dados_termo.concedente_municipio|default:"Guanambi" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Supervisor:</span> 
+                                {{ dados_termo.supervisor_nome|default:estagio.supervisor_nome }}
+                            </div>
+                            <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ dados_termo.concedente_telefone|default:"(__) ____-____" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Orientadora:</span> 
+                                {{ estagio.orientador.get_full_name }}
+                            </div>
+                             <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ estagio.orientador.telefone|default:"(__) ____-____" }}
+                            </div>
+                            
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Unidade Escolar:</span> Centro Estadual de Educação Profissional em Saúde e Gestão
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Estagiário:</span> {{ aluno.get_full_name }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Curso Técnico:</span> {{ aluno.alunoturma_set.first.turma.curso.nome }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Período do Estágio:</span> 
+                                <span>
+                                    {{ dados_reais.data_inicio|default:dados_termo.data_inicio|date:"d/m/Y" }} 
+                                    à 
+                                    {{ dados_reais.data_fim|default:dados_termo.data_fim|date:"d/m/Y" }}
+                                </span>
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Total de Horas Cumpridas:</span> 
+                                <span>{{ form.total_horas.value }}</span>
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">CNPJ:</span> 
+                                {{ dados_termo.concedente_cnpj|default:"___.___.___/____-__" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Concedente:</span> 
+                                {{ dados_termo.concedente_email|default:"(email@empresa.com)" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Escola:</span> ceep.saudeegestao@educacao.ba.gov.br
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-uppercase bg-secondary text-white p-2 rounded">1. Avaliação da Concedente</h6>
+                        <div class="table-responsive mb-2">
+                            <table class="table table-bordered table-hover table-aval">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="40%">Critérios</th><th width="15%">Ótimo</th><th width="15%">Bom</th><th width="15%">Regular</th><th width="15%">Insuficiente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field in form %}
+                                        {% if field.name in 'infraestrutura atividades_exercidas organizacao_empresa supervisao_estagio' %}
+                                        <tr><td>{{ field.label }}</td>{% for radio in field %}<td>{{ radio.tag }}</td>{% endfor %}</tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="row mb-4 align-items-center justify-content-end me-1">
+                            <div class="col-auto"><label class="fw-bold text-uppercase">Avaliação Final:</label></div>
+                            <div class="col-auto">{{ form.avaliacao_final_empresa }}</div>
+                        </div>
+
+                        <h6 class="fw-bold text-uppercase bg-secondary text-white p-2 rounded">2. Aspectos a serem Avaliados (Estagiário)</h6>
+                        <div class="table-responsive mb-2">
+                             <table class="table table-bordered table-hover table-aval">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="40%">Aspectos</th><th width="15%">Ótimo</th><th width="15%">Bom</th><th width="15%">Regular</th><th width="15%">Insuficiente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field in form %}
+                                        {% if field.name in 'assiduidade pontualidade interesse organizacao_aluno responsabilidade postura relacionamento' %}
+                                        <tr><td>{{ field.label }}</td>{% for radio in field %}<td>{{ radio.tag }}</td>{% endfor %}</tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row mb-4 align-items-center justify-content-end me-1">
+                            <div class="col-auto"><label class="fw-bold text-uppercase">Avaliação Final:</label></div>
+                            <div class="col-auto">{{ form.avaliacao_final_aluno }}</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="fw-bold text-uppercase mb-2">Observações:</label>
+                            {{ form.observacoes }}
+                        </div>
+                        <div class="mt-5 text-center" style="font-size: 12pt; font-family: sans-serif;">
+                        <p class="mb-0 fw-bold fst-italic">
+                            Av. Santos Dumont, s/n Centro – Guanambi/BA
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            77-3451-5096/3451-5444 (Telefone fixo e WhatsApp)
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            ceep.saudeegestao@educacao.ba.gov.br
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            https://www.ceep-guanambi.com
+                        </p>
+                    </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

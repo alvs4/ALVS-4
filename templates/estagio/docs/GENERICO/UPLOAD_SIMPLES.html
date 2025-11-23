@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+
+            {% if request.user.tipo == 'aluno' %}
+                <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-3">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% elif request.user.tipo == 'servidor' %}
+                <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-3">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% endif %}
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0 text-center">{{ documento.get_tipo_documento_display }}</h5>
+                </div>
+                <div class="card-body text-center p-5">
+
+                    <div class="mb-4">
+                        {% if documento.arquivo_anexo %}
+                            <i class="fas fa-file-pdf text-danger fa-4x"></i>
+                        {% else %}
+                            <i class="fas fa-cloud-upload-alt text-muted fa-4x"></i>
+                        {% endif %}
+                    </div>
+
+                    {% if documento.arquivo_anexo %}
+                        
+                        <h6 class="text-success fw-bold mb-3">Documento Anexado com Sucesso!</h6>
+                        <p class="text-muted small mb-4">{{ documento.arquivo_anexo.name|cut:"anexos_estagio/" }}</p>
+
+                        <div class="d-grid gap-2 col-md-8 mx-auto">
+                            <a href="{{ documento.arquivo_anexo.url }}" target="_blank" class="btn btn-outline-primary">
+                                <i class="fas fa-eye me-2"></i> Visualizar Arquivo
+                            </a>
+
+                            {% if request.user.tipo == 'aluno' and documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
+                                <form action="{% url 'remover_arquivo_anexo' documento.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Tem certeza que deseja remover este arquivo?');">
+                                        <i class="fas fa-trash-alt me-2"></i> Remover Arquivo
+                                    </button>
+                                </form>
+
+                                <div class="mt-4 pt-3 border-top">
+                                    <p class="small text-muted mb-2">Se o documento estiver correto, clique abaixo para enviar.</p>
+                                    <form action="{% url 'assinar_documento_aluno' documento.id %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-paper-plane me-2"></i> Enviar para Análise
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    {% else %}
+                        
+                        <h6 class="text-muted mb-3">Nenhum arquivo anexado.</h6>
+                        
+                        {% if request.user.tipo == 'aluno' %}
+                            <p class="small text-muted mb-4">Por favor, faça o upload do arquivo em formato PDF.</p>
+
+                            <form action="{% url 'upload_arquivo_anexo' documento.id %}" method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <input class="form-control" type="file" name="arquivo_anexo" accept="application/pdf" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-upload me-2"></i> Fazer Upload
+                                </button>
+                            </form>
+                        {% else %}
+                            <p class="small text-muted">O aluno ainda não enviou este documento.</p>
+                        {% endif %}
+
+                    {% endif %}
+
+                    {% if request.user.tipo == 'servidor' and documento.status == 'AGUARDANDO_VERIFICACAO_ADMIN' %}
+                        <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-center">
+                            <form action="{% url 'servidor_reprovar_documento' documento.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-times me-1"></i> Reprovar
+                                </button>
+                            </form>
+                            <form action="{% url 'servidor_aprovar_documento' documento.id %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-check me-1"></i> Aprovar
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <span class="badge bg-light text-dark border">Status: {{ documento.get_status_display }}</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

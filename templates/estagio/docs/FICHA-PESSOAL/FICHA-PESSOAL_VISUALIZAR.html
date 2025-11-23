@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Estilos específicos para reproduzir a Ficha Pessoal */
+    .ficha-box {
+        border: 1px solid #000;
+        padding: 5px 10px;
+        margin-bottom: -1px; /* Para bordas compartilhadas */
+        font-size: 11pt;
+        font-family: Arial, sans-serif;
+    }
+    .ficha-label {
+        font-weight: bold;
+        margin-right: 5px;
+    }
+    .ficha-title {
+        background-color: #f0f0f0;
+        text-align: center;
+        font-weight: bold;
+        padding: 5px;
+        border: 1px solid #000;
+        margin-top: 10px;
+        margin-bottom: -1px;
+    }
+    .table-atividades {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 10pt;
+    }
+    .table-atividades th, .table-atividades td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: center;
+    }
+    .table-atividades th {
+        background-color: #f9f9f9;
+    }
+    /* Altura fixa para linhas vazias para impressão */
+    .empty-row {
+        height: 35px;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+
+            {% if request.user.tipo == 'aluno' %}
+                <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'professor' %}
+                <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'direcao' %}
+                <a href="{% url 'servidor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'servidor' %}
+                <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% endif %}
+
+        <div class="d-flex justify-content-end mb-2">
+            {% if documento.status == 'REPROVADO' %}
+                <span class="badge bg-danger text-white p-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i> Reprovado: Corrija e assine novamente
+                </span>
+            {% endif %}
+        </div>
+            
+        <div class="card shadow-sm mb-3 action-buttons-bar">
+                <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h5 class="mb-0 fs-6 ms-2">Visualizar: Ficha Pessoal</h5>
+                    </div>
+                    
+                    {% if not is_public_verification %}
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        
+                        <button type="button" onclick="printDocumento()" class="btn btn-secondary btn-sm" title="Imprimir documento para assinatura manual">
+                            <i class="fas fa-print me-1"></i> Imprimir
+                        </button>
+
+                        {% if request.user.tipo == 'aluno' %}
+                            
+                            {% if documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
+                            
+                                <a href="{% url 'preencher_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm" title="Editar os dados ou anexar PDF">
+                                    <i class="fas fa-edit me-1"></i> Editar
+                                </a>
+                                
+                                <form id="upload-pdf-form" action="{% url 'upload_pdf_assinado' documento.id %}" method="post" enctype="multipart/form-data" class="d-inline">
+                                    {% csrf_token %}
+                                    <label for="pdf-upload-input" class="btn btn-secondary btn-sm m-0" title="Anexar PDF com assinaturas manuais" style="cursor: pointer;">
+                                        <i class="fas fa-paperclip me-1"></i> Anexar PDF
+                                    </label>
+                                    <input type="file" name="pdf_supervisor_assinado" id="pdf-upload-input" accept="application/pdf" style="display: none;" onchange="document.getElementById('upload-pdf-form').submit();">
+                                </form>
+                                
+                                <form action="{% url 'assinar_documento_aluno' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Você confirma que leu e concorda com todos os termos deste documento? Esta ação não pode ser desfeita.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm" title="Assinar eletronicamente">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar e Encaminhar
+                                    </button>
+                                </form>
+                            
+                            {% else %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Você já assinou
+                                </span>
+                            {% endif %}
+                        
+                        {% elif request.user.tipo == 'professor' %}
+                            
+                            {% if pode_assinar_orientador %}
+                                <form action="{% url 'professor_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Assinar este documento? Esta ação será registrada com seu nome e data.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm shadow">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar como Orientador
+                                    </button>
+                                </form>
+                            {% elif documento.assinado_orientador_em %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Assinado por você
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark p-2">
+                                    Não requer sua ação
+                                </span>
+                            {% endif %}
+
+                        {% elif request.user.tipo == 'direcao' %}
+                            
+                            {% if pode_assinar_direcao %}
+                                <form action="{% url 'direcao_assinar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Assinar este documento como Diretor(a)? Esta ação será registrada com seu nome e data.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm shadow">
+                                        <i class="fas fa-pen-alt me-1"></i> Assinar como Direção
+                                    </button>
+                                </form>
+                            {% elif documento.assinado_diretor_em %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Assinado pela Direção
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark p-2">
+                                    Não requer sua ação
+                                </span>
+                            {% endif %}
+
+                        {% elif request.user.tipo == 'servidor' %}
+                            
+                            {% if pode_reprovar_servidor %}
+                            <form action="{% url 'servidor_reprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Tem certeza que deseja REPROVAR este documento? As assinaturas serão limpas e ele voltará ao aluno para correção.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Reprovar este documento">
+                                    <i class="fas fa-times me-1"></i> Reprovar
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if pode_aprovar_servidor %}
+                            <form action="{% url 'servidor_aprovar_documento' documento.id %}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('Tem certeza que deseja APROVAR este documento? Esta ação o marcará como Concluído.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm shadow-sm" title="Aprovar Documento">
+                                    <i class="fas fa-check me-1"></i> Aprovar Documento
+                                </button>
+                            </form>
+                            {% else %}
+                                {% if documento.status == 'CONCLUIDO' %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Aprovado
+                                </span>
+                                {% endif %}
+                            {% endif %}
+
+                        {% endif %}
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div id="print-area" class="card shadow-sm">
+                <div class="card-body p-4 p-md-5 document-body">
+
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP" style="width: 100%;">
+                    </div>
+
+                    <div class="row g-0 mt-4">
+                        <div class="ficha-title">FICHA PESSOAL DO ESTAGIÁRIO</div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">Concedente:</span> {{ dados.concedente_nome|default:dados_termo.concedente_nome|default:estagio.supervisor_empresa }}
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">Município:</span> {{ dados.concedente_municipio|default:dados_termo.concedente_cidade_uf|default:"Guanambi" }}
+                        </div>
+                        <div class="col-8 ficha-box">
+                            <span class="ficha-label">Supervisor:</span> {{ dados.supervisor_nome|default:dados_termo.supervisor_nome|default:estagio.supervisor_nome }}
+                        </div>
+                        <div class="col-4 ficha-box border-start-0">
+                            <span class="ficha-label">Telefone:</span> {{ dados.supervisor_telefone|default:dados_termo.concedente_telefone|default:"(__) ____-____" }}
+                        </div>
+                        <div class="col-8 ficha-box">
+                            <span class="ficha-label">Orientadora:</span> 
+                            {% if estagio.orientador %}
+                                {{ estagio.orientador.get_full_name }}
+                            {% else %}
+                                (Não definido)
+                            {% endif %}
+                        </div>
+                         <div class="col-4 ficha-box border-start-0">
+                            <span class="ficha-label">Telefone:</span> {{ estagio.orientador.telefone|default:"(__) ____-____" }}
+                        </div>
+                    </div>
+
+                    <div class="row g-0">
+                        
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">Unidade Escolar:</span> Centro Estadual de Educação Profissional em Saúde e Gestão
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">Estagiário:</span> {{ aluno.get_full_name }}
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">Curso Técnico:</span> {{ aluno.alunoturma_set.first.turma.curso.nome }}
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">Período do Estágio:</span> 
+                            {{ dados.data_inicio|default:dados_termo.data_inicio|default:estagio.data_inicio|date:"d/m/Y" }} 
+                            à 
+                            {{ dados.data_fim|default:dados_termo.data_fim|default:estagio.data_fim|date:"d/m/Y" }}
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">CNPJ:</span> {{ dados.concedente_cnpj|default:dados_termo.concedente_cnpj|default:"___.___.___/____-__" }}
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">E-mail Concedente:</span> {{ dados.concedente_email|default:dados_termo.concedente_email|default:"(email@empresa.com)" }}
+                        </div>
+                        <div class="col-12 ficha-box">
+                            <span class="ficha-label">E-mail Escola:</span> ceep.saudeegestao@educacao.ba.gov.br
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h6 class="fw-bold text-center">QUADRO DE ATIVIDADES</h6>
+                        <table class="table-atividades">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">DATA</th>
+                                    <th style="width: 35%;">ATIVIDADES DESENVOLVIDAS</th>
+                                    <th style="width: 30%;">OBJETIVOS</th>
+                                    <th style="width: 20%;">ENTRADA E SAÍDA<br>(horários)</th>
+                                </tr>
+                            </thead>
+                                <tbody>
+                                    {% if documento.dados_formulario.atividades_lista %}
+                                        {% for item in documento.dados_formulario.atividades_lista %}
+                                        <tr>
+                                            <td style="text-align: center;">{{ item.data|date:"d/m/Y"|default:"" }}</td>
+                                            
+                                            <td style="text-align: left;">{{ item.atividade|default:""|linebreaksbr }}</td>
+                                            <td style="text-align: left;">{{ item.objetivo|default:""|linebreaksbr }}</td>
+                                            <td>{{ item.horario|default:"" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                        
+                                        {% for i in "123456789012" %}
+                                            {% if forloop.counter > documento.dados_formulario.atividades_lista|length %}
+                                            <tr class="empty-row"><td></td><td></td><td></td><td></td></tr>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                    {% else %}
+                                        {% for i in "123456789012" %} 
+                                        <tr class="empty-row">
+                                            <td></td><td></td><td></td><td></td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tbody>
+                        </table>
+                        
+                        <div class="mt-2 text-end fw-bold">
+                            Total de Horas Cumpridas: 
+                            <span style="border-bottom: 1px solid #000; padding-left: 10px; padding-right: 10px;">
+                                {{ dados.total_horas|default:"_____________________" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h6 class="text-center text-muted small mt-5 pt-3" style="text-transform: uppercase;">Assinaturas</h6>
+                    <div class="row signature-block">
+                        <div class="col-12 text-center">
+                            <p class="mt-5 mb-0" style="font-family: monospace;">________________________________________</p>
+                            <p class="small text-dark fw-bold mb-0">Assinatura do Supervisor de Estágio</p>
+                        </div>
+                    </div>
+
+                    <div class="card mt-5 border-secondary">
+                        <div class="card-header"> 
+                            <h6 class="mb-0">Anexo PDF</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center"> 
+                            {% if documento.pdf_supervisor_assinado %}
+                                {% if pdf_existe %}
+                                            <p class="small mt-2 mb-0">
+                                                <i class="fas fa-check-circle text-success me-1"></i>
+                                                Ficheiro anexado:
+                                                <a href="{{ documento.pdf_supervisor_assinado.url }}" target="_blank" class="fw-bold">
+                                                    {{ documento.pdf_supervisor_assinado.name|cut:"pdfs_assinados/" }}
+                                                </a>
+                                                <span class="text-muted">
+                                                    ({{ documento.pdf_supervisor_assinado.size|filesizeformat }})
+                                                </span>
+
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <a href="{{ documento.pdf_supervisor_assinado.url }}" target="_blank" class="btn btn-outline-success btn-sm ms-2">
+                                                        <i class="fas fa-file-pdf"></i> Ver PDF
+                                                    </a>
+                                                    
+                                                    <form action="{% url 'remover_pdf_assinado' documento.id %}" method="post"> 
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm ms-2" 
+                                                                onclick="return confirm('Tem certeza que deseja remover o PDF anexado?');">
+                                                            <i class="fas fa-trash-alt"></i> Remover
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </p>
+                                {% else %}
+                                            <p class="small text-warning mb-0">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                O arquivo anexado foi removido do servidor.
+                                            </p>
+                                {% endif %}
+                            {% else %}
+                                <p class="small text-muted mb-0">
+                                    Nenhum PDF com assinaturas manuais foi anexado ainda.
+                                </p>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-5 border-secondary">
+                        <div class="card-header"> 
+                            <h6 class="mb-0">Assinatura Eletrônica</h6>
+                        </div>
+                        <div class="card-body">
+                            {% include 'estagio/includes/assinaturas_bloco.html' with documento=documento %}
+                        </div>
+                    </div>
+
+                    <div class="mt-5 text-center" style="font-size: 12pt; font-family: sans-serif;">
+                        <p class="mb-0 fw-bold fst-italic">
+                            Av. Santos Dumont, s/n Centro – Guanambi/BA
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            77-3451-5096/3451-5444 (Telefone fixo e WhatsApp)
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            ceep.saudeegestao@educacao.ba.gov.br
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            https://www.ceep-guanambi.com
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+            </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function printDocumento() {
+    const area = document.getElementById('print-area');
+    const body = document.body;
+    const original = body.innerHTML;
+
+    body.innerHTML = area.outerHTML;
+    window.print();
+    body.innerHTML = original;
+    window.location.reload();
+}
+</script>
+{% endblock %}
+{% endblock content %}

@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<style>
+    /* Estilos Visuais (Idênticos ao Visualizar) */
+    .ficha-box {
+        border: 1px solid #000;
+        padding: 5px 10px;
+        margin-bottom: -1px; 
+        font-size: 11pt;
+        font-family: Arial, sans-serif;
+        background-color: #fdfdfd; /* Ligeiramente diferente para indicar leitura */
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+    }
+    .ficha-label {
+        font-weight: bold;
+        margin-right: 5px;
+        white-space: nowrap;
+    }
+    .ficha-title {
+        background-color: #f0f0f0;
+        text-align: center;
+        font-weight: bold;
+        padding: 5px;
+        border: 1px solid #000;
+        margin-top: 10px;
+        margin-bottom: -1px;
+    }
+    /* Estilos da Tabela Editável */
+    .table-atividades {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 10pt;
+    }
+    .table-atividades th, .table-atividades td {
+        border: 1px solid #000;
+        padding: 4px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    .table-atividades th {
+        background-color: #f9f9f9;
+    }
+    /* Inputs Integrados na Tabela */
+    .input-integrated {
+        border: 1px solid #dcdcdc; /* Borda suave */
+        border-radius: 0;
+        padding: 4px;
+        width: 100%;
+        font-size: 10pt;
+        background-color: #fff;
+    }
+    .input-integrated:focus {
+        outline: 2px solid #80bdff;
+        border-color: #80bdff;
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+            <form id="form-ficha-pessoal" method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+            <div class="card shadow-sm mb-3 sticky-top" style="top: 10px; z-index: 1000;">
+                <div class="card-body d-flex justify-content-between align-items-center py-2">
+                    <div>
+                        <h5 class="mb-0 fs-6">Editando: Ficha Pessoal</h5>
+                        <small class="text-muted">Preencha o quadro de atividades.</small>
+                    </div>
+                    <div>
+                        <a href="{% url 'visualizar_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm">Cancelar</a>
+                        <button type="submit" class="btn btn-primary btn-sm px-3">Salvar</button>
+                    </div>
+                </div>
+            </div>
+
+                <input type="hidden" name="concedente_nome" value="{{ dados.concedente_nome|default:dados_termo.concedente_nome|default:estagio.supervisor_empresa }}">
+                <input type="hidden" name="concedente_municipio" value="{{ dados.concedente_municipio|default:dados_termo.concedente_cidade_uf|default:'Guanambi' }}">
+                <input type="hidden" name="supervisor_nome" value="{{ dados.supervisor_nome|default:dados_termo.supervisor_nome|default:estagio.supervisor_nome }}">
+                <input type="hidden" name="supervisor_telefone" value="{{ dados.supervisor_telefone|default:dados_termo.concedente_telefone }}">
+                <input type="hidden" name="concedente_cnpj" value="{{ dados.concedente_cnpj|default:dados_termo.concedente_cnpj }}">
+                <input type="hidden" name="concedente_email" value="{{ dados.concedente_email|default:dados_termo.concedente_email }}">
+                
+                <input type="hidden" name="data_inicio" value="{{ dados.data_inicio|default:dados_termo.data_inicio|date:'Y-m-d'|default:estagio.data_inicio|date:'Y-m-d' }}">
+                <input type="hidden" name="data_fim" value="{{ dados.data_fim|default:dados_termo.data_fim|date:'Y-m-d'|default:estagio.data_fim|date:'Y-m-d' }}">
+
+
+                <div class="card shadow-sm">
+                    <div class="card-body p-4 p-md-5 document-body">
+
+                        <div class="text-center mb-4">
+                            <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho CEEP" style="width: 100%;">
+                        </div>
+
+                        <div class="row g-0 mt-4">
+                            <div class="ficha-title">FICHA PESSOAL DO ESTAGIÁRIO</div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Concedente:</span> 
+                                {{ dados.concedente_nome|default:dados_termo.concedente_nome|default:estagio.supervisor_empresa }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Município:</span> 
+                                {{ dados.concedente_municipio|default:dados_termo.concedente_cidade_uf|default:"Guanambi" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Supervisor:</span> 
+                                {{ dados.supervisor_nome|default:dados_termo.supervisor_nome|default:estagio.supervisor_nome }}
+                            </div>
+                            <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ dados.supervisor_telefone|default:dados_termo.concedente_telefone|default:"(__) ____-____" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Orientadora:</span> 
+                                {% if estagio.orientador %}
+                                    {{ estagio.orientador.get_full_name }}
+                                {% else %}
+                                    (Não definido)
+                                {% endif %}
+                            </div>
+                             <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ estagio.orientador.telefone|default:"(__) ____-____" }}
+                            </div>
+                        </div>
+
+                        <div class="row g-0">
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Unidade Escolar:</span> Centro Estadual de Educação Profissional em Saúde e Gestão
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Estagiário:</span> {{ aluno.get_full_name }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Curso Técnico:</span> {{ aluno.alunoturma_set.first.turma.curso.nome }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Período do Estágio:</span> 
+                                {{ dados.data_inicio|default:dados_termo.data_inicio|date:"d/m/Y"|default:estagio.data_inicio|date:"d/m/Y" }} 
+                                à 
+                                {{ dados.data_fim|default:dados_termo.data_fim|date:"d/m/Y"|default:estagio.data_fim|date:"d/m/Y" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">CNPJ:</span> 
+                                {{ dados.concedente_cnpj|default:dados_termo.concedente_cnpj|default:"___.___.___/____-__" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Concedente:</span> 
+                                {{ dados.concedente_email|default:dados_termo.concedente_email|default:"(email@empresa.com)" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Escola:</span> ceep.saudeegestao@educacao.ba.gov.br
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6 class="fw-bold text-center">QUADRO DE ATIVIDADES</h6>
+                            
+                            <div class="alert alert-light border-warning small mb-2 p-2 text-center">
+                                <i class="fas fa-info-circle text-warning"></i>
+                                Preencha a coluna amarela <strong>"Horas"</strong> para calcular o total. Ela não aparecerá na impressão.
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table-atividades" id="tabela-atividades">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">DATA</th>
+                                            <th style="width: 30%;">ATIVIDADES DESENVOLVIDAS</th>
+                                            <th style="width: 25%;">OBJETIVOS</th>
+                                            <th style="width: 15%;">ENTRADA E SAÍDA<br>(Texto)</th>
+                                            <th style="width: 10%; background-color: #fff3cd;">HORAS<br>(Cálculo)</th>
+                                            <th style="width: 5%; border: none; background: none;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-atividades">
+                                        {% for item in documento.dados_formulario.atividades_lista %}
+                                        <tr>
+                                            <td><input type="date" name="atividade_data" class="input-integrated" value="{{ item.data }}"></td>
+                                            <td><textarea name="atividade_desc" class="input-integrated" rows="2">{{ item.atividade }}</textarea></td>
+                                            <td><textarea name="atividade_obj" class="input-integrated" rows="2">{{ item.objetivo }}</textarea></td>
+                                            <td><input type="text" name="atividade_horario" class="input-integrated text-center" value="{{ item.horario }}" placeholder="08:00 - 12:00"></td>
+                                            
+                                            <td style="background-color: #fff3cd;">
+                                                <input type="number" step="0.5" name="atividade_qtd_horas" class="input-integrated calc-horas text-center fw-bold" value="{{ item.qtd_horas }}" placeholder="0">
+                                            </td>
+                                            
+                                            <td style="border: none;">
+                                                <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" style="padding: 2px 6px;"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td><input type="date" name="atividade_data" class="input-integrated"></td>
+                                            <td><textarea name="atividade_desc" class="input-integrated" rows="2"></textarea></td>
+                                            <td><textarea name="atividade_obj" class="input-integrated" rows="2"></textarea></td>
+                                            <td><input type="text" name="atividade_horario" class="input-integrated text-center" placeholder="08:00 - 12:00"></td>
+                                            <td style="background-color: #fff3cd;">
+                                                <input type="number" step="0.5" name="atividade_qtd_horas" class="input-integrated calc-horas text-center fw-bold" placeholder="0">
+                                            </td>
+                                            <td style="border: none;">
+                                                <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" style="padding: 2px 6px;"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-row">
+                                    <i class="fas fa-plus me-1"></i> Adicionar Linha
+                                </button>
+                            </div>
+
+                            <div class="mt-3 text-end fw-bold d-flex align-items-center justify-content-end">
+                                <span class="me-2">Total de Horas Cumpridas:</span>
+                                <div style="width: 150px;">
+                                    {{ form.total_horas|add_class:"input-integrated text-center fw-bold border-bottom border-dark"|attr:"readonly:readonly" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 text-center" style="font-size: 10pt; font-family: sans-serif;">
+                            <p class="mb-0 fw-bold fst-italic">
+                                Av. Santos Dumont, s/n Centro – Guanambi/BA
+                            </p>
+                            <p class="mb-0 fw-bold fst-italic">
+                                77-3451-5096/3451-5444 (Telefone fixo e WhatsApp)
+                            </p>
+                            <p class="mb-0 fw-bold fst-italic">
+                                ceep.saudeegestao@educacao.ba.gov.br
+                            </p>
+                            <p class="mb-0 fw-bold fst-italic">
+                                https://www.ceep-guanambi.com
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('tbody-atividades');
+    const btnAdd = document.getElementById('btn-add-row');
+    const totalInput = document.querySelector('input[name="total_horas"]');
+
+    // --- Função de Cálculo ---
+    function calcularTotal() {
+        let total = 0;
+        const inputsHoras = document.querySelectorAll('.calc-horas');
+        
+        inputsHoras.forEach(input => {
+            const valor = parseFloat(input.value);
+            if (!isNaN(valor)) {
+                total += valor;
+            }
+        });
+
+        if (total > 0) {
+             totalInput.value = total + " horas";
+        } else {
+             totalInput.value = "";
+        }
+    }
+
+    // --- Adicionar Nova Linha ---
+    btnAdd.addEventListener('click', function() {
+        const firstRow = tbody.querySelector('tr');
+        const newRow = firstRow.cloneNode(true);
+        
+        // Limpa os valores
+        newRow.querySelectorAll('input, textarea').forEach(input => input.value = '');
+        
+        tbody.appendChild(newRow);
+        attachEvents(newRow);
+    });
+
+    // --- Anexar Eventos (Remover e Calcular) ---
+    function attachEvents(row) {
+        const btnRemove = row.querySelector('.btn-remove-row');
+        btnRemove.onclick = function() {
+            if (tbody.querySelectorAll('tr').length > 1) {
+                row.remove();
+                calcularTotal();
+            } else {
+                alert("É necessário ter pelo menos uma linha.");
+            }
+        };
+
+        const inputHoras = row.querySelector('.calc-horas');
+        inputHoras.addEventListener('input', calcularTotal);
+    }
+
+    // Inicializar
+    document.querySelectorAll('#tbody-atividades tr').forEach(row => attachEvents(row));
+    calcularTotal();
+});
+</script>
+{% endblock %}
+{% endblock content %}

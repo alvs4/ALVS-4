@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Estilos Padronizados */
+    .ficha-box {
+        border: 1px solid #000;
+        padding: 5px 10px;
+        margin-bottom: -1px;
+        font-size: 10pt; 
+        font-family: Arial, sans-serif;
+        background-color: #fff;
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+    }
+    .ficha-label {
+        font-weight: bold;
+        margin-right: 5px;
+        white-space: nowrap;
+    }
+    .table-aval th, .table-aval td { text-align: center; vertical-align: middle; }
+    .table-aval td:first-child { text-align: left; font-weight: bold; }
+    
+    /* Checkmark visual para leitura */
+    .check-mark { font-weight: bold; font-size: 1.2em; color: #000; }
+</style>
+<div class="container mt-4 mb-5"> 
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9"> 
+
+            {# === BOTÃO VOLTAR (igual o TERMO) === #}
+            {% if request.user.tipo == 'aluno' %}
+                <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'servidor' %}
+                <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% endif %}
+
+            {# === ALERTA DE REPROVAÇÃO === #}
+            {% if documento.status == 'REPROVADO' %}
+            <div class="alert alert-danger p-2">
+                <i class="fas fa-times-circle me-1"></i>
+                Reprovado: Refaça o documento e anexe novamente.
+            </div>
+            {% endif %}
+
+            {# === BARRA DE AÇÕES === #}
+            <div class="card shadow-sm mb-3">
+                <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                        <h5 class="mb-0 fs-6 ms-2">Avaliação do Supervisor</h5>
+                    </div>
+
+                    <div class="ms-auto d-flex align-items-center gap-2">
+
+                        {# --- IMPRIMIR --- #}
+                        <button type="button" onclick="printDocumento()" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-print me-1"></i> Imprimir
+                        </button>
+
+                        {# --- SE ALUNO --- #}
+                        {% if request.user.tipo == 'aluno' %}
+
+                            {% if documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
+                                
+                                <form id="upload-pdf-form" 
+                                      action="{% url 'upload_pdf_assinado' documento.id %}" 
+                                      method="post" enctype="multipart/form-data" class="d-inline">
+                                    {% csrf_token %}
+                                    <label for="pdf-upload-input" 
+                                           class="btn btn-secondary btn-sm m-0"
+                                           style="cursor: pointer;">
+                                        <i class="fas fa-paperclip me-1"></i> Anexar PDF
+                                    </label>
+                                    <input type="file" name="pdf_supervisor_assinado" 
+                                           id="pdf-upload-input" accept="application/pdf"
+                                           style="display:none;" 
+                                           onchange="document.getElementById('upload-pdf-form').submit();">
+                                </form>
+
+                                <form action="{% url 'assinar_documento_aluno' documento.id %}" 
+                                      method="POST" class="d-inline"
+                                      onsubmit="return confirm('Você confirma que deseja enviar este documento?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-paper-plane me-1"></i> Enviar
+                                    </button>
+                                </form>
+
+                            {% else %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Enviado
+                                </span>
+                            {% endif %}
+
+                        {% endif %}
+
+                        {# --- SE SERVIDOR --- #}
+                        {% if request.user.tipo == 'servidor' %}
+                            
+                            {% if pode_reprovar_servidor %}
+                            <form action="{% url 'servidor_reprovar_documento' documento.id %}"
+                                  method="POST" class="d-inline"
+                                  onsubmit="return confirm('Reprovar documento?');">
+                                {% csrf_token %}
+                                <button class="btn btn-danger btn-sm">
+                                    <i class="fas fa-times me-1"></i> Reprovar
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if pode_aprovar_servidor %}
+                            <form action="{% url 'servidor_aprovar_documento' documento.id %}"
+                                  method="POST" class="d-inline"
+                                  onsubmit="return confirm('Aprovar documento?');">
+                                {% csrf_token %}
+                                <button class="btn btn-success btn-sm">
+                                    <i class="fas fa-check me-1"></i> Aprovar
+                                </button>
+                            </form>
+                            {% endif %}
+
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# === ÁREA IMPRIMÍVEL === #}
+            <div id="print-area" class="card shadow-sm">
+                <div class="card-body p-4 p-md-5 document-body">
+
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/img/cabecalho.png' %}" style="width:100%;">
+                        <h5 class="text-center fw-bold mb-4" style="text-transform: uppercase;">
+                        Avaliação de Desempenho do Estagiário
+                    </h5>
+                    </div>
+
+                    <div class="row g-0 mb-4">
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Concedente:</span> 
+                                {{ dados_termo.concedente_nome|default:estagio.supervisor_empresa }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Município:</span> 
+                                {{ dados_termo.concedente_municipio|default:"Guanambi" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Supervisor:</span> 
+                                {{ dados_termo.supervisor_nome|default:estagio.supervisor_nome }}
+                            </div>
+                            <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ dados_termo.concedente_telefone|default:"(__) ____-____" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Orientadora:</span> 
+                                {{ estagio.orientador.get_full_name }}
+                            </div>
+                             <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ estagio.orientador.telefone|default:"(__) ____-____" }}
+                            </div>
+                            
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Unidade Escolar:</span> Centro Estadual de Educação Profissional em Saúde e Gestão
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Estagiário:</span> {{ aluno.get_full_name }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Curso Técnico:</span> {{ aluno.alunoturma_set.first.turma.curso.nome }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Período do Estágio:</span> 
+                                <span>
+                                    {{ dados_reais.data_inicio|default:dados_termo.data_inicio|date:"d/m/Y" }} 
+                                    à 
+                                    {{ dados_reais.data_fim|default:dados_termo.data_fim|date:"d/m/Y" }}
+                                </span>
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Total de Horas Cumpridas:</span> 
+                                <span>{{ dados_reais.total_horas }}</span>
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">CNPJ:</span> 
+                                {{ dados_termo.concedente_cnpj|default:"___.___.___/____-__" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Concedente:</span> 
+                                {{ dados_termo.concedente_email|default:"(email@empresa.com)" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Escola:</span> ceep.saudeegestao@educacao.ba.gov.br
+                            </div>
+                        </div>
+
+                    <!-- === TÍTULO DA SEÇÃO === -->
+                    <h6 class="fw-bold text-uppercase bg-secondary text-white p-2 rounded mt-4">
+                        ASPECTOS A SEREM AVALIADOS
+                    </h6>
+
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="40%" class="text-start ps-3">Aspectos</th>
+                                    <th>Ótimo</th>
+                                    <th>Bom</th>
+                                    <th>Regular</th>
+                                    <th>Insuficiente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-start ps-3">1. Assiduidade</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-start ps-3">2. Pontualidade</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-start ps-3">3. Interesse pelo trabalho</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-start ps-3">4. Organização</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-start ps-3">5. Responsabilidade</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-start ps-3">6. Postura profissional</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-start ps-3">7. Relacionamento</td>
+                                    <td></td><td></td><td></td><td></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-start ps-3">AVALIAÇÃO FINAL:</th>
+                                    <td colspan="4"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- === OBSERVAÇÕES === -->
+                    <h6 class="fw-bold text-uppercase mt-4">OBSERVAÇÕES:</h6>
+                    <div style="min-height: 140px; border: 1px solid #000; padding: 10px;">
+                        <p style="margin: 0; padding: 0;">&nbsp;</p>
+                        <p style="margin: 0; padding: 0;">&nbsp;</p>
+                        <p style="margin: 0; padding: 0;">&nbsp;</p>
+                    </div>
+
+                    <!-- === ÁREA DO SUPERVISOR === -->
+                    <div class="mt-4 border" style="border-width: 2px !important;">
+                        <div class="bg-secondary text-white p-2 fw-bold">
+                            SUPERVISOR DO ESTÁGIO
+                        </div>
+
+                        <div class="p-3">
+                            <p class="mb-1 fw-bold">NOME:</p>
+                            <div style="height: 30px; border-bottom: 1px solid #000;"></div>
+
+                            <p class="mt-4 mb-1 fw-bold">CARIMBO E ASSINATURA:</p>
+                            <div style="height: 70px; border-bottom: 1px solid #000;"></div>
+
+                            <div class="row mt-4">
+                                <div class="col-8">
+                                    <p class="fw-bold mb-1">LOCAL:</p>
+                                    <div style="height: 30px; border-bottom: 1px solid #000;"></div>
+                                </div>
+                                <div class="col-4">
+                                    <p class="fw-bold mb-1">DATA:</p>
+                                    <div style="height: 30px; border-bottom: 1px solid #000;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# === ANEXO PDF === #}
+                    <div class="card mt-5 border-secondary">
+                        <div class="card-header"> 
+                            <h6 class="mb-0">Anexo PDF</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center"> 
+                            {% if documento.pdf_supervisor_assinado %}
+                                {% if pdf_existe %}
+                                        <p class="small mt-2 mb-0">
+                                            <i class="fas fa-check-circle text-success me-1"></i>
+                                            Ficheiro anexado:
+                                            <a href="{{ documento.pdf_supervisor_assinado.url }}" target="_blank" class="fw-bold">
+                                                {{ documento.pdf_supervisor_assinado.name|cut:"pdfs_assinados/" }}
+                                            </a>
+                                            <span class="text-muted">
+                                                ({{ documento.pdf_supervisor_assinado.size|filesizeformat }})
+                                            </span>
+
+                                            <div class="d-flex align-items-center gap-2">
+                                                <a href="{{ documento.pdf_supervisor_assinado.url }}" target="_blank" class="btn btn-outline-success btn-sm ms-2">
+                                                    <i class="fas fa-file-pdf"></i> Ver PDF
+                                                </a>
+                                                
+                                                <form action="{% url 'remover_pdf_assinado' documento.id %}" method="post"> 
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm ms-2" 
+                                                            onclick="return confirm('Tem certeza que deseja remover o PDF anexado?');">
+                                                        <i class="fas fa-trash-alt"></i> Remover
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </p>
+                                {% else %}
+                                        <p class="small text-warning mb-0">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            O arquivo anexado foi removido do servidor.
+                                        </p>
+                                {% endif %}
+                            {% else %}
+                                <p class="small text-muted mb-0">
+                                    Nenhum PDF com assinaturas manuais foi anexado ainda.
+                                </p>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+function printDocumento() {
+    window.print();
+}
+</script>
+
+{% endblock %}

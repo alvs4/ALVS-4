@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<style>
+    /* Estilos Padronizados */
+    .ficha-box {
+        border: 1px solid #000;
+        padding: 5px 10px;
+        margin-bottom: -1px;
+        font-size: 10pt; 
+        font-family: Arial, sans-serif;
+        background-color: #fff;
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+    }
+    .ficha-label {
+        font-weight: bold;
+        margin-right: 5px;
+        white-space: nowrap;
+    }
+    .table-aval th, .table-aval td { text-align: center; vertical-align: middle; }
+    .table-aval td:first-child { text-align: left; font-weight: bold; }
+    
+    /* Checkmark visual para leitura */
+    .check-mark { font-weight: bold; font-size: 1.2em; color: #000; }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+
+            {% if request.user.tipo == 'aluno' %}
+                <a href="{% url 'detalhes_estagio_aluno' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'professor' %}
+                <a href="{% url 'professor_dashboard' %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% elif request.user.tipo == 'servidor' %}
+                <a href="{% url 'servidor_ver_documentos_aluno' aluno.id %}" class="btn btn-secondary btn-sm mb-2">
+                <i class="fas fa-arrow-left me-1"></i> Voltar 
+                </a>
+            {% endif %}
+
+                <div class="card shadow-sm mb-3 action-buttons-bar">
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap">
+                        <div>
+                            <h5 class="mb-0 fs-6 ms-2">Visualizar: Avaliação do Orientador</h5>
+                        </div>
+
+                    {% if request.user.tipo == 'professor' %}
+                        {% if pode_assinar_orientador %}
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'professor_preencher_documento' documento.id %}" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-edit me-1"></i> Editar Avaliação
+                                </a>
+                                
+                                <form action="{% url 'professor_assinar_documento' documento.id %}" method="POST" onsubmit="return confirm('Ao assinar, o documento será finalizado e enviado para a secretaria. Confirmar?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-file-signature me-1"></i> Assinar e Finalizar
+                                    </button>
+                                </form>
+                            </div>
+                            {% elif documento.assinado_orientador_em %}
+                                <span class="badge bg-success text-white p-2">
+                                    <i class="fas fa-check me-1"></i> Assinado por você
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4 p-md-5 document-body">
+                    
+                    <div class="text-center mb-4">
+                        <img src="{% static 'assets/img/cabecalho.png' %}" alt="Cabeçalho" style="width: 100%;">
+                        <h5 class="fw-bold mt-3 text-uppercase">Avaliação de Desempenho do Estagiário</h5>
+                    </div>
+
+                    <div class="row g-0 mb-4">
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Concedente:</span> 
+                                {{ dados_termo.concedente_nome|default:estagio.supervisor_empresa }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Município:</span> 
+                                {{ dados_termo.concedente_municipio|default:"Guanambi" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Supervisor:</span> 
+                                {{ dados_termo.supervisor_nome|default:estagio.supervisor_nome }}
+                            </div>
+                            <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ dados_termo.concedente_telefone|default:"(__) ____-____" }}
+                            </div>
+                            <div class="col-8 ficha-box">
+                                <span class="ficha-label">Orientadora:</span> 
+                                {{ estagio.orientador.get_full_name }}
+                            </div>
+                             <div class="col-4 ficha-box border-start-0">
+                                <span class="ficha-label">Telefone:</span> 
+                                {{ estagio.orientador.telefone|default:"(__) ____-____" }}
+                            </div>
+                            
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Unidade Escolar:</span> Centro Estadual de Educação Profissional em Saúde e Gestão
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Estagiário:</span> {{ aluno.get_full_name }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Curso Técnico:</span> {{ aluno.alunoturma_set.first.turma.curso.nome }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Período do Estágio:</span> 
+                                <span>
+                                    {{ dados_reais.data_inicio|default:dados_termo.data_inicio|date:"d/m/Y" }} 
+                                    à 
+                                    {{ dados_reais.data_fim|default:dados_termo.data_fim|date:"d/m/Y" }}
+                                </span>
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">Total de Horas Cumpridas:</span> 
+                                <span>{{ dados_reais.total_horas }}</span>
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">CNPJ:</span> 
+                                {{ dados_termo.concedente_cnpj|default:"___.___.___/____-__" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Concedente:</span> 
+                                {{ dados_termo.concedente_email|default:"(email@empresa.com)" }}
+                            </div>
+                            <div class="col-12 ficha-box">
+                                <span class="ficha-label">E-mail Escola:</span> ceep.saudeegestao@educacao.ba.gov.br
+                            </div>
+                        </div>
+
+                    <h6 class="fw-bold text-uppercase bg-secondary text-white p-2 rounded">1. Avaliação da Concedente</h6>
+                    <div class="table-responsive mb-2">
+                        <table class="table table-bordered table-hover table-aval">
+                            <thead class="table-light">
+                                <tr><th width="40%">Critérios</th><th width="15%">Ótimo</th><th width="15%">Bom</th><th width="15%">Regular</th><th width="15%">Insuficiente</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="text-start ps-2">Infraestrutura</td>
+                                    <td>{% if dados.infraestrutura == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.infraestrutura == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.infraestrutura == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.infraestrutura == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Atividades Exercidas</td>
+                                    <td>{% if dados.atividades_exercidas == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.atividades_exercidas == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.atividades_exercidas == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.atividades_exercidas == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Organização</td>
+                                    <td>{% if dados.organizacao_empresa == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.organizacao_empresa == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.organizacao_empresa == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.organizacao_empresa == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Supervisão de Estágio</td>
+                                    <td>{% if dados.supervisao_estagio == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.supervisao_estagio == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.supervisao_estagio == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.supervisao_estagio == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-2 text-end fw-bold">
+                        Avaliação Final (Nota): <span style="border-bottom: 1px solid #000; padding: 0 10px;">{{ dados.avaliacao_final_empresa|default:"____" }}</span>
+                    </div>
+
+                    <h6 class="fw-bold text-uppercase bg-secondary text-white p-2 rounded mt-4">2. Aspectos a serem Avaliados (Estagiário)</h6>
+                    <div class="table-responsive mb-2">
+                        <table class="table table-bordered table-hover table-aval">
+                            <thead class="table-light">
+                                <tr><th width="40%">Aspectos</th><th>Ótimo</th><th>Bom</th><th>Regular</th><th>Insuficiente</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="text-start ps-2">Assiduidade</td>
+                                    <td>{% if dados.assiduidade == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.assiduidade == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.assiduidade == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.assiduidade == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Pontualidade</td>
+                                    <td>{% if dados.pontualidade == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.pontualidade == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.pontualidade == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.pontualidade == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Interesse pelo Trabalho</td>
+                                    <td>{% if dados.interesse == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.interesse == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.interesse == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.interesse == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Organização</td>
+                                    <td>{% if dados.organizacao_aluno == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.organizacao_aluno == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.organizacao_aluno == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.organizacao_aluno == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Responsabilidade</td>
+                                    <td>{% if dados.responsabilidade == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.responsabilidade == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.responsabilidade == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.responsabilidade == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Postura Profissional</td>
+                                    <td>{% if dados.postura == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.postura == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.postura == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.postura == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                                <tr><td class="text-start ps-2">Relacionamento</td>
+                                    <td>{% if dados.relacionamento == 'OTIMO' %}X{% endif %}</td>
+                                    <td>{% if dados.relacionamento == 'BOM' %}X{% endif %}</td>
+                                    <td>{% if dados.relacionamento == 'REGULAR' %}X{% endif %}</td>
+                                    <td>{% if dados.relacionamento == 'INSUFICIENTE' %}X{% endif %}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-2 text-end fw-bold">
+                        Avaliação Final (Nota): <span style="border-bottom: 1px solid #000; padding: 0 10px;">{{ dados.avaliacao_final_aluno|default:"____" }}</span>
+                    </div>
+
+                    <div class="mt-3 p-3 border rounded bg-light">
+                        <strong>OBSERVAÇÕES:</strong><br>
+                        {{ dados.observacoes|linebreaksbr|default:"(Sem observações)" }}
+                    </div>
+
+                    <div class="card mt-5 border-secondary">
+                        <div class="card-header bg-light"> 
+                            <h6 class="mb-0">Assinatura Eletrônica</h6>
+                        </div>
+                        <div class="card-body">
+                            {% include 'estagio/includes/assinaturas_bloco.html' with documento=documento %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5 text-center" style="font-size: 12pt; font-family: sans-serif;">
+                        <p class="mb-0 fw-bold fst-italic">
+                            Av. Santos Dumont, s/n Centro – Guanambi/BA
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            77-3451-5096/3451-5444 (Telefone fixo e WhatsApp)
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            ceep.saudeegestao@educacao.ba.gov.br
+                        </p>
+                        <p class="mb-0 fw-bold fst-italic">
+                            https://www.ceep-guanambi.com
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

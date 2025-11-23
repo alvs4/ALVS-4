@@ -16,4 +16,5 @@ urlpatterns = [
     path('professor/aluno/<int:aluno_id>/detalhes/', views.ver_detalhes_aluno_professor, name='ver_detalhes_aluno_professor'),
     path('professor/estagio/documento/<int:documento_id>/visualizar/', views.professor_visualizar_documento, name='professor_visualizar_documento'),
     path('professor/estagio/documento/<int:documento_id>/assinar/', views.professor_assinar_documento, name='professor_assinar_documento'),
+    path('documento/<int:documento_id>/preencher/', views.professor_preencher_documento, name='professor_preencher_documento'),
 ]

@@ -201,20 +201,74 @@ def servidor_visualizar_documento(request, documento_id):
         return redirect('servidor_monitorar_alunos')
     
     dados = documento.dados_formulario or {}
+    
+    # Converter datas
     for campo in ['data_inicio', 'data_fim']:
         valor = dados.get(campo)
         if isinstance(valor, str):
-            try:
-                dados[campo] = datetime.date.fromisoformat(valor)
-            except ValueError:
-                pass 
+            try: dados[campo] = datetime.date.fromisoformat(valor)
+            except: pass 
     
+    if 'atividades_lista' in dados:
+        for item in dados['atividades_lista']:
+            data_str = item.get('data')
+            if data_str and isinstance(data_str, str):
+                try: item['data'] = datetime.date.fromisoformat(data_str)
+                except: pass
+
+    # === LÓGICA COMPARTILHADA: DADOS DO TERMO E REAIS ===
+    dados_termo = {}
+    try:
+        termo = DocumentoEstagio.objects.filter(estagio=estagio, tipo_documento='TERMO_COMPROMISSO').first()
+        if termo:
+            dados_termo = termo.dados_formulario or {}
+            for key in ['data_inicio', 'data_fim']:
+                 if dados_termo.get(key):
+                    try: dados_termo[key] = datetime.date.fromisoformat(dados_termo[key])
+                    except: pass
+    except: pass
+
+    dados_reais = {}
+    try:
+        ficha = DocumentoEstagio.objects.filter(estagio=estagio, tipo_documento='FICHA_PESSOAL').first()
+        if ficha:
+            dados_ficha = ficha.dados_formulario or {}
+            if dados_ficha.get('total_horas'):
+                dados_reais['total_horas'] = dados_ficha.get('total_horas')
+            
+            atividades = dados_ficha.get('atividades_lista', [])
+            datas_validas = []
+            for item in atividades:
+                if item.get('data'):
+                    try: datas_validas.append(datetime.date.fromisoformat(item.get('data')))
+                    except: pass
+            if datas_validas:
+                datas_validas.sort()
+                dados_reais['data_inicio'] = datas_validas[0]
+                dados_reais['data_fim'] = datas_validas[-1]
+    except: pass
+    # ====================================================
+
+    template_name = ''
+
     if documento.tipo_documento == 'TERMO_COMPROMISSO':
         template_name = 'estagio/docs/TERMO-DE-COMPROMISSO/TERMO-DE-COMPROMISSO_VISUALIZAR.html'
         
     elif documento.tipo_documento == 'FICHA_IDENTIFICACAO':
         template_name = 'estagio/docs/FICHA-DE-IDENTIFICACAO/FICHA-DE-IDENTIFICACAO_VISUALIZAR.html'
+
+    elif documento.tipo_documento == 'FICHA_PESSOAL':
+        template_name = 'estagio/docs/FICHA-PESSOAL/FICHA-PESSOAL_VISUALIZAR.html'
         
+    elif documento.tipo_documento == 'AVALIACAO_ORIENTADOR':
+        template_name = 'estagio/docs/AVALIACAO-ORIENTADOR/AVALIACAO-ORIENTADOR_VISUALIZAR.html'
+        
+    elif documento.tipo_documento == 'AVALIACAO_SUPERVISOR':
+        template_name = 'estagio/docs/AVALIACAO-SUPERVISOR/AVALIACAO-SUPERVISOR_VISUALIZAR.html'
+
+    elif documento.tipo_documento in ['COMP_RESIDENCIA', 'COMP_AGUA_LUZ', 'ID_CARD', 'SUS_CARD', 'VACINA_CARD', 'APOLICE_SEGURO']:
+        template_name = 'estagio/docs/GENERICO/UPLOAD_SIMPLES.html'
+
     else:
         messages.info(request, f"A visualização para '{documento.get_tipo_documento_display()}' ainda não foi implementada.")
         return redirect('servidor_ver_documentos_aluno', aluno_id=aluno.id)
@@ -224,6 +278,8 @@ def servidor_visualizar_documento(request, documento_id):
         'estagio': estagio,
         'aluno': aluno,
         'dados': dados,
+        'dados_termo': dados_termo,
+        'dados_reais': dados_reais, # IMPORTANTE
         'pdf_existe': documento.pdf_supervisor_assinado.storage.exists(documento.pdf_supervisor_assinado.name) if documento.pdf_supervisor_assinado else False,
         'user_is_servidor': True,
         'pode_aprovar_servidor': documento.status == 'AGUARDANDO_VERIFICACAO_ADMIN',
