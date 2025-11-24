@@ -38,7 +38,7 @@ def professor_dashboard_view(request):
     avaliacoes_queryset = DocumentoEstagio.objects.filter(
         estagio__orientador=request.user,
         tipo_documento='AVALIACAO_ORIENTADOR',
-        status__in=['RASCUNHO', 'AGUARDANDO_ASSINATURA_PROF']
+        status__in=['RASCUNHO', 'RASCUNHO_ORIENTADOR', 'AGUARDANDO_ASSINATURA_PROF']
     )
 
     for doc in avaliacoes_queryset:
@@ -166,7 +166,7 @@ def professor_assinar_documento(request, documento_id):
     # ---------------------------------------------------
     if tipo == 'AVALIACAO_ORIENTADOR':
         # A avaliação pode ser assinada mesmo em RASCUNHO
-        if documento.status not in ['RASCUNHO', 'AGUARDANDO_ASSINATURA_PROF']:
+        if documento.status not in ['RASCUNHO', 'RASCUNHO_ORIENTADOR', 'AGUARDANDO_ASSINATURA_PROF']:
             messages.error(request, "Esta avaliação não está pronta para assinatura.")
             return redirect('professor_dashboard')
 
@@ -285,7 +285,7 @@ def professor_visualizar_documento(request, documento_id):
     pode_assinar = False
     if documento.status == 'AGUARDANDO_ASSINATURA_PROF':
         pode_assinar = True
-    elif documento.tipo_documento == 'AVALIACAO_ORIENTADOR' and documento.status == 'RASCUNHO':
+    elif documento.tipo_documento == 'AVALIACAO_ORIENTADOR' and documento.status in ['RASCUNHO', 'RASCUNHO_ORIENTADOR']:
         pode_assinar = True
 
     context = {

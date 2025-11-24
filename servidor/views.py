@@ -188,10 +188,12 @@ def servidor_visualizar_documento(request, documento_id):
     estagio = documento.estagio
     aluno = estagio.aluno
 
+    # 1. Validação de Eixo do Servidor
     if not eixo_servidor:
         messages.error(request, "Seu usuário não está associado a um Eixo.")
         return redirect('servidor_monitorar_alunos')
 
+    # 2. Validação de Permissão sobre o Aluno
     aluno_pertence_ao_eixo = aluno.alunoturma_set.filter(
         turma__curso__eixo=eixo_servidor
     ).exists()
@@ -200,6 +202,22 @@ def servidor_visualizar_documento(request, documento_id):
         messages.error(request, "Você não tem permissão para ver os documentos deste aluno.")
         return redirect('servidor_monitorar_alunos')
     
+    # ==============================================================================
+    # === NOVA LÓGICA DE AUTO-CORREÇÃO (SELF-HEALING) ===
+    # Verifica a integridade do estágio ao visualizar qualquer documento dele
+    # ==============================================================================
+    documentos_do_estagio = estagio.documentos.all()
+    if documentos_do_estagio.exists():
+        pendencias = documentos_do_estagio.exclude(status='CONCLUIDO').exists()
+        
+        # Se não houver pendências (tudo concluído) e o status ainda não for APROVADO...
+        if not pendencias and estagio.status_geral != 'APROVADO':
+            estagio.status_geral = 'APROVADO'
+            estagio.save()
+            # O status atualiza silenciosamente para que, ao carregar a página, 
+            # as badges já apareçam corretas.
+    # ==============================================================================
+
     dados = documento.dados_formulario or {}
     
     # Converter datas
@@ -279,7 +297,7 @@ def servidor_visualizar_documento(request, documento_id):
         'aluno': aluno,
         'dados': dados,
         'dados_termo': dados_termo,
-        'dados_reais': dados_reais, # IMPORTANTE
+        'dados_reais': dados_reais, 
         'pdf_existe': documento.pdf_supervisor_assinado.storage.exists(documento.pdf_supervisor_assinado.name) if documento.pdf_supervisor_assinado else False,
         'user_is_servidor': True,
         'pode_aprovar_servidor': documento.status == 'AGUARDANDO_VERIFICACAO_ADMIN',
@@ -327,6 +345,7 @@ def servidor_reprovar_documento(request, documento_id):
 @login_required
 @role_required('servidor')
 def servidor_aprovar_documento(request, documento_id):
+    # 1. Verificações Iniciais (Método POST)
     if request.method != 'POST':
         return redirect('servidor_monitorar_alunos')
 
@@ -335,6 +354,7 @@ def servidor_aprovar_documento(request, documento_id):
     aluno = estagio.aluno
     servidor = request.user
     
+    # 2. Verificação de Segurança (Eixo)
     aluno_pertence_ao_eixo = aluno.alunoturma_set.filter(
         turma__curso__eixo=servidor.eixo
     ).exists()
@@ -343,12 +363,41 @@ def servidor_aprovar_documento(request, documento_id):
         messages.error(request, "Você não tem permissão para gerenciar este documento.")
         return redirect('servidor_monitorar_alunos')
 
+    # 3. Evitar retrabalho
     if documento.status == 'CONCLUIDO':
         messages.info(request, "Este documento já estava aprovado.")
         return redirect('servidor_ver_documentos_aluno', aluno_id=aluno.id)
 
+    # 4. APROVAÇÃO DO DOCUMENTO INDIVIDUAL
     documento.status = 'CONCLUIDO'
     documento.save()
     
-    messages.success(request, f"O documento '{documento.get_tipo_documento_display()}' foi APROVADO com sucesso!")
+    # ==============================================================================
+    # NOVA LÓGICA: VERIFICAÇÃO DE CONCLUSÃO DO DOSSIÊ
+    # ==============================================================================
+    
+    # Pergunta ao banco: "Existe algum documento deste estágio que NÃO seja 'CONCLUIDO'?"
+    pendencias = DocumentoEstagio.objects.filter(estagio=estagio).exclude(status='CONCLUIDO').exists()
+    
+    if not pendencias:
+        # Se NÃO há pendências (a lista de 'não concluídos' está vazia),
+        # significa que tudo está pronto. Aprovamos o estágio geral!
+        estagio.status_geral = 'APROVADO'
+        estagio.save()
+        
+        messages.success(
+            request, 
+            f"O documento '{documento.get_tipo_documento_display()}' foi aprovado e o Dossiê de Estágio foi FINALIZADO com sucesso!"
+        )
+    else:
+        # Se ainda houver documentos pendentes, apenas avisa que este foi aprovado
+        # Opcional: Garante que o status geral reflita que está andando
+        if estagio.status_geral in ['RASCUNHO_ALUNO', 'PENDENTE_CORRECAO']:
+             estagio.status_geral = 'EM_ANDAMENTO'
+             estagio.save()
+
+        messages.success(request, f"O documento '{documento.get_tipo_documento_display()}' foi APROVADO com sucesso!")
+        
+    # ==============================================================================
+
     return redirect('servidor_ver_documentos_aluno', aluno_id=aluno.id)

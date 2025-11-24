@@ -15,9 +15,11 @@
             </div>
 
             <div class="card shadow-lg border-0 mb-4 bg-body">
+                
                 <div class="card-header text-bg-secondary py-2 rounded-top">
                     <h5 class="mb-0 fs-6 text-white">Informações Gerais</h5>
                 </div>
+                
                 <div class="card-body p-3">
                     <div class="row g-2">
                         <div class="col-md-7">
@@ -28,13 +30,15 @@
                         </div>
                         <div class="col-md-5">
                             <h6 class="text-body-secondary small mb-0">Status Geral do Dossiê</h6>
+                            
                             <span class="badge 
                                 {% if estagio.status_geral == 'RASCUNHO_ALUNO' %}text-bg-dark text-white{% endif %}
                                 {% if estagio.status_geral == 'EM_ANDAMENTO' %}text-bg-dark text-white{% endif %}
                                 {% if estagio.status_geral == 'APROVADO' %}text-bg-success{% endif %}
                                 {% if estagio.status_geral == 'PENDENTE_CORRECAO' %}text-bg-danger{% endif %}
                             p-2">
-                                {{ estagio.get_status_geral_display|default:"Indefinido" }}
+                                <i class="fas fa-info-circle me-1"></i>
+                                {{ estagio.get_status_geral_display }}
                             </span>
                         </div>
 
@@ -65,17 +69,13 @@
             </div>
 
             <div class="card shadow-lg border-0 bg-body">
+                
                 <div class="card-header text-bg-secondary py-2 d-flex justify-content-between align-items-center flex-wrap">
                     <h5 class="mb-0 fs-6 text-white">Documentos Requeridos</h5>
                     
-                    <span class="badge 
-                        {% if estagio.status_geral == 'RASCUNHO_ALUNO' %}text-bg-dark text-white{% endif %}
-                        {% if estagio.status_geral == 'EM_ANDAMENTO' %}text-bg-dark text-white{% endif %}
-                        {% if estagio.status_geral == 'APROVADO' %}text-bg-success{% endif %}
-                        {% if estagio.status_geral == 'PENDENTE_CORRECAO' %}text-bg-danger{% endif %}
-                    p-2">
+                    <span class="badge text-bg-dark text-whitebp-2">
                         <i class="fas fa-info-circle me-1"></i>
-                        Status do Dossiê: {{ estagio.get_status_geral_display }}
+                        Siga a ordem da lista (de cima para baixo) para facilitar o preenchimento.
                     </span>
                 </div>
 
@@ -109,38 +109,34 @@
                                             {% endif %}
                                         </td>
                                         <td class="text-center align-middle">
+                                            
                                             <span class="badge rounded-pill p-2
                                                 {% if doc.status == 'RASCUNHO' %}text-bg-dark text-white{% endif %}
+                                                {% if doc.status == 'RASCUNHO_ORIENTADOR' %}text-bg-dark text-white{% endif %}
                                                 {% if doc.status == 'AGUARDANDO_ASSINATURA_PROF' %}text-bg-dark text-white{% endif %}
                                                 {% if doc.status == 'AGUARDANDO_ASSINATURA_DIR' %}text-bg-dark text-white{% endif %}
                                                 {% if doc.status == 'AGUARDANDO_VERIFICACAO_ADMIN' %}text-bg-dark text-white{% endif %}
-                                                {% if doc.status == 'CONCLUIDO' %}text-bg-success{% endif %}
+                                                {% if doc.status == 'CONCLUIDO' %}text-bg-dark text white{% endif %}
                                                 {% if doc.status == 'REPROVADO' %}text-bg-danger{% endif %}">
-                                                {% if doc.tipo_documento == 'AVALIACAO_ORIENTADOR' %}
-                                                    <span>Aguardando Preenchimento (Professor)</span>
-                                                {% else %}
-                                                    {{ doc.get_status_display }}
-                                                {% endif %}
+                                                {{ doc.get_status_display }}
                                             </span>
                                         </td>
                                         <td class="text-center align-middle d-flex justify-content-end gap-2">
-                                            
+    
                                             {% if doc.tipo_documento in 'TERMO_COMPROMISSO FICHA_PESSOAL FICHA_IDENTIFICACAO AVALIACAO_ORIENTADOR AVALIACAO_SUPERVISOR' %}
-                                                
-                                                <a href="{% url 'visualizar_documento_estagio' doc.id %}"
+                                            
+                                            <a href="{% url 'visualizar_documento_estagio' doc.id %}"
                                                     class="btn btn-outline-secondary btn-sm"
-                                                    title="Visualizar Conteúdo">
+                                                    title="Visualizar Conteúdo do Documento">
                                                     <i class="fas fa-search"></i>
                                                 </a>
                                                 
-                                                {% if doc.tipo_documento != 'AVALIACAO_ORIENTADOR' %}
-                                                    {% if doc.status == 'RASCUNHO' or doc.status == 'REPROVADO' %}
-                                                        <a href="{% url 'preencher_documento_estagio' doc.id %}"
-                                                            class="btn btn-outline-secondary btn-sm"
-                                                            title="Preencher/Editar">
-                                                            <i class="fas fa-edit"></i>
-                                                        </a>
-                                                    {% endif %}
+                                                {% if doc.status == 'RASCUNHO' or doc.status == 'REPROVADO' %}
+                                                    <a href="{% url 'preencher_documento_estagio' doc.id %}"
+                                                        class="btn btn-outline-secondary btn-sm"
+                                                        title="Preencher/Editar Documento">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
                                                 {% endif %}
 
                                             {% elif doc.tipo_documento in 'COMP_RESIDENCIA COMP_AGUA_LUZ ID_CARD SUS_CARD VACINA_CARD APOLICE_SEGURO' %}
@@ -170,4 +166,5 @@
         </div>
     </div>
 </div>
-{% endblock %}
+
+{% endblock content %}

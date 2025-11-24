@@ -43,14 +43,23 @@ def gestao_estagio_aluno(request):
     if criado:
         tipos_de_documento = DocumentoEstagio.TIPO_DOCUMENTO_CHOICES
         documentos_para_criar = []
+        
         for tipo_id, nome_legivel in tipos_de_documento:
+            # Lógica para definir o status inicial correto
+            status_inicial = 'RASCUNHO'
+            
+            # Se for a Avaliação do Orientador, o rascunho pertence ao professor
+            if tipo_id == 'AVALIACAO_ORIENTADOR':
+                status_inicial = 'RASCUNHO_ORIENTADOR'
+            
             documentos_para_criar.append(
                 DocumentoEstagio(
                     estagio=estagio,
                     tipo_documento=tipo_id,
-                    status='RASCUNHO' 
+                    status=status_inicial 
                 )
             )
+            
         DocumentoEstagio.objects.bulk_create(documentos_para_criar)
         messages.info(request, "Seu Dossiê de Estágio foi criado. Por favor, preencha os documentos necessários.")
 
@@ -62,6 +71,15 @@ def gestao_estagio_aluno(request):
 def detalhes_estagio_aluno(request):
     estagio = get_object_or_404(Estagio, aluno=request.user)
     documentos_qs = DocumentoEstagio.objects.filter(estagio=estagio)
+    
+    existe_pendencia = documentos_qs.exclude(status='CONCLUIDO').exists()
+    
+    # Se NÃO houver pendências (tudo verde) E houver documentos na lista
+    if not existe_pendencia and documentos_qs.exists():
+        # Se o status geral ainda não for APROVADO, atualiza agora
+        if estagio.status_geral != 'APROVADO':
+            estagio.status_geral = 'APROVADO'
+            estagio.save()
     
     ordem_desejada = [
         'TERMO_COMPROMISSO', 'FICHA_IDENTIFICACAO', 'FICHA_PESSOAL',

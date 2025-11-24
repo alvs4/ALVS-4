@@ -5,11 +5,21 @@
 <div class="container mt-5">
 
     <a href="{% url 'servidor_monitorar_alunos' %}" class="btn btn-outline-secondary mb-3">
-        Voltar para a Lista
+        <i class="fas fa-arrow-left me-1"></i> Voltar para a Lista
     </a>
-    <h2 class="mb-1">Checklist de Documentos</h2>
-    <p class="h5 text-muted">Aluno(a): {{ aluno.get_full_name }}</p>
-    <p>Status do Dossiê: <strong>{{ estagio.get_status_geral_display }}</strong></p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Checklist de Documentos</h2>
+            <p class="h5 text-muted">Aluno(a): {{ aluno.get_full_name }}</p>
+        </div>
+        <div class="text-end">
+            <span class="badge 
+                {% if estagio.status_geral == 'APROVADO' %}bg-success{% elif estagio.status_geral == 'PENDENTE_CORRECAO' %}bg-danger{% else %}bg-secondary{% endif %} 
+                fs-6"><i class="fas fa-info-circle me-1"></i>
+                Status do Dossiê: {{ estagio.get_status_geral_display }}
+            </span>
+        </div>
+    </div>
     
     <hr class="my-4">
 
@@ -27,19 +37,42 @@
                 <div class="col-md-4">
                     {% if doc.status == 'CONCLUIDO' %}
                         <span class="badge bg-success">
-                            Pronto
+                            <i class="fas fa-check me-1"></i> Pronto
                         </span>
+                    
                     {% elif doc.status == 'RASCUNHO' %}
                         <span class="badge bg-danger">
-                            Faltando (Aluno)
+                            <i class="fas fa-user-edit me-1"></i> Faltando (Aluno)
                         </span>
+
+                    {% elif doc.status == 'RASCUNHO_ORIENTADOR' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-chalkboard-teacher me-1"></i> Pendente (Professor)
+                        </span>
+
                     {% elif doc.status == 'REPROVADO' %}
                          <span class="badge bg-danger">
-                            Pendente Correção
+                            <i class="fas fa-times-circle me-1"></i> Pendente Correção
                         </span>
+                    
+                    {% elif doc.status == 'AGUARDANDO_ASSINATURA_PROF' %}
+                        <span class="badge bg-info text-dark">
+                            <i class="fas fa-pen-nib me-1"></i> Assinatura (Professor)
+                        </span>
+
+                    {% elif doc.status == 'AGUARDANDO_ASSINATURA_DIR' %}
+                        <span class="badge bg-info text-dark">
+                            <i class="fas fa-pen-fancy me-1"></i> Assinatura (Direção)
+                        </span>
+
+                    {% elif doc.status == 'AGUARDANDO_VERIFICACAO_ADMIN' %}
+                        <span class="badge bg-primary">
+                            <i class="fas fa-search me-1"></i> Verificar (Servidor)
+                        </span>
+
                     {% else %}
-                        <span class="badge bg-warning text-dark">
-                            Em Processo ({{ doc.get_status_display }})
+                        <span class="badge bg-secondary">
+                            {{ doc.get_status_display }}
                         </span>
                     {% endif %}
                 </div>

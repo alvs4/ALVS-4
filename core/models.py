@@ -319,8 +319,10 @@ class DocumentoEstagio(models.Model):
 
     STATUS_CHOICES = [
         ('RASCUNHO', 'Rascunho (Pelo Aluno)'),
+        ('RASCUNHO_ORIENTADOR', 'Rascunho (Pelo Professor)'),
         ('AGUARDANDO_ASSINATURA_PROF', 'Aguardando Assinatura (Professor)'),
         ('AGUARDANDO_ASSINATURA_DIR', 'Aguardando Assinatura (Direção)'),
+        ('AGUARDANDO_VERIFICACAO_ADMIN', 'Aguardando Análise Final'),
         ('CONCLUIDO', 'Concluído'), # Status final para todos
         ('REPROVADO', 'Reprovado (Pendente de Correção)'),
     ]
