@@ -46,34 +46,86 @@
                         </button>
 
                         {% if request.user.tipo == 'aluno' %}
-                            
+
                             {% if documento.status == 'RASCUNHO' or documento.status == 'REPROVADO' %}
-                            
-                                <a href="{% url 'preencher_documento_estagio' documento.id %}" class="btn btn-secondary btn-sm" title="Editar os dados ou anexar PDF">
+
+                                <!-- Botão Editar -->
+                                <a href="{% url 'preencher_documento_estagio' documento.id %}" 
+                                class="btn btn-secondary btn-sm" 
+                                title="Editar os dados ou anexar PDF">
                                     <i class="fas fa-edit me-1"></i> Editar
                                 </a>
-                                
-                                <form id="upload-pdf-form" action="{% url 'upload_pdf_assinado' documento.id %}" method="post" enctype="multipart/form-data" class="d-inline">
+
+                                <!-- Botão Anexar PDF -->
+                                <form id="upload-pdf-form" 
+                                    action="{% url 'upload_pdf_assinado' documento.id %}" 
+                                    method="post" 
+                                    enctype="multipart/form-data" 
+                                    class="d-inline">
                                     {% csrf_token %}
-                                    <label for="pdf-upload-input" class="btn btn-secondary btn-sm m-0" title="Anexar PDF com assinaturas manuais" style="cursor: pointer;">
+                                    <label for="pdf-upload-input" 
+                                        class="btn btn-secondary btn-sm m-0" 
+                                        title="Anexar PDF com assinaturas manuais"
+                                        style="cursor: pointer;">
                                         <i class="fas fa-paperclip me-1"></i> Anexar PDF
                                     </label>
-                                    <input type="file" name="pdf_supervisor_assinado" id="pdf-upload-input" accept="application/pdf" style="display: none;" onchange="document.getElementById('upload-pdf-form').submit();">
+                                    <input type="file" 
+                                        name="pdf_supervisor_assinado" 
+                                        id="pdf-upload-input" 
+                                        accept="application/pdf"
+                                        style="display: none;" 
+                                        onchange="document.getElementById('upload-pdf-form').submit();">
                                 </form>
-                                
-                                <form action="{% url 'assinar_documento_aluno' documento.id %}" method="POST" class="d-inline"
-                                    onsubmit="return confirm('Você confirma que leu e concorda com todos os termos deste documento? Esta ação não pode ser desfeita.');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary btn-sm" title="Assinar eletronicamente">
-                                        <i class="fas fa-pen-alt me-1"></i> Assinar e Encaminhar
-                                    </button>
-                                </form>
-                            
+
+                                {% if is_menor %}
+                                    <!-- AVISO: MENOR DE IDADE -->
+                                    <span class="badge bg-warning text-dark p-2 me-2"
+                                        title="Você é menor de idade. Não pode assinar eletronicamente. É necessário anexar o PDF assinado pelo responsável.">
+                                        <i class="fas fa-exclamation-triangle me-1"></i> 
+                                        Menor: Assinatura Eletrônica Bloqueada
+                                    </span>
+
+                                    {% if documento.pdf_supervisor_assinado %}
+                                        <!-- Botão de encaminhar habilitado -->
+                                        <form action="{% url 'encaminhar_documento_aluno' documento.id %}" 
+                                            method="POST" 
+                                            class="d-inline"
+                                            onsubmit="return confirm('Confirma que anexou o PDF assinado pelo seu Responsável Legal e deseja encaminhar o documento?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="fas fa-paper-plane me-1"></i> Encaminhar ao Professor
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <!-- Mensagem: precisa anexar PDF -->
+                                        <span class="badge bg-danger text-white p-2 me-2"
+                                            title="Anexe o PDF assinado pelo responsável para poder encaminhar.">
+                                            <i class="fas fa-file-pdf me-1"></i> 
+                                            Anexar PDF do Responsável para Encaminhar
+                                        </span>
+                                    {% endif %}
+
+                                {% else %}
+                                    <!-- ALUNO MAIOR DE IDADE: BOTÃO ASSINAR -->
+                                    <form action="{% url 'assinar_documento_aluno' documento.id %}" 
+                                        method="POST" 
+                                        class="d-inline"
+                                        onsubmit="return confirm('Confirmar assinatura eletrônica?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-check me-1"></i> Assinar Eletronicamente
+                                        </button>
+                                    </form>
+                                {% endif %}
+
                             {% else %}
-                                <span class="badge bg-success text-white p-2">
-                                    <i class="fas fa-check me-1"></i> Você já assinou
-                                </span>
-                            {% endif %}
+                                <!-- Documento já não está mais em edição -->
+                                {% if documento.assinado_aluno_em %}
+                                    <span class="badge bg-success text-white p-2">
+                                        <i class="fas fa-check me-1"></i> Você já assinou
+                                    </span>
+                                {% endif %}
+                        {% endif %}
                         
                         {% elif request.user.tipo == 'professor' %}
                             

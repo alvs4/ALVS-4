@@ -15,6 +15,7 @@ urlpatterns = [
     path('aluno/estagio/documento/<int:documento_id>/upload-pdf/', views.upload_pdf_assinado, name='upload_pdf_assinado'),
     path('aluno/estagio/documento/<int:documento_id>/remover_pdf/', views.remover_pdf_assinado, name='remover_pdf_assinado'),
     path('aluno/estagio/documento/<int:documento_id>/assinar/', views.assinar_documento_aluno, name='assinar_documento_aluno'),
+    path('documento/<int:documento_id>/encaminhar/', views.encaminhar_documento_aluno, name='encaminhar_documento_aluno'),
     path('estagio/documento/<int:documento_id>/upload-anexo/', views.upload_arquivo_anexo, name='upload_arquivo_anexo'),
     path('estagio/documento/<int:documento_id>/remover-anexo/', views.remover_arquivo_anexo, name='remover_arquivo_anexo'),
 ]

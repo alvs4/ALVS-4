@@ -29,6 +29,21 @@ class EmailAuthenticationForm(AuthenticationForm):
                 )
         return self.cleaned_data
     
+class InserirEmailForm(forms.Form):
+    email = forms.EmailField(
+        label="E-mail",
+        widget=forms.EmailInput(attrs={
+            "class": "form-control",
+            "placeholder": "exemplo@email.com"
+        })
+    )
+    
+class Codigo2FAForm(forms.Form):
+    codigo = forms.CharField(
+        max_length=6,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Digite o código recebido"}),
+    )
+    
 class ProfessorMateriaAnoCursoModalidadeForm(forms.ModelForm):
     class Meta:
         model = ProfessorMateriaAnoCursoModalidade
@@ -93,7 +108,7 @@ class AlunoCreateForm(forms.ModelForm):
             'rg', 'orgao', 'data_expedicao', 'cpf',
             'nome_pai', 'nome_mae', 'responsavel_matricula',
             'endereco_rua', 'endereco_numero', 'endereco_bairro',
-            'endereco_cidade', 'endereco_cep', 'telefone', 'email',
+            'endereco_cidade', 'endereco_cep', 'telefone',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -227,13 +242,10 @@ class ServidorCreateForm(forms.ModelForm):
         required=True
     )
 
-    # 🎯 CORREÇÃO: Adicionado campo 'email' que faltava no __init__
-    email = forms.EmailField(required=False, label="Email (Opcional)")
-
     class Meta:
         model = CustomUser
         fields = [
-            'first_name', 'last_name', 'eixo', 'email', # 🎯 'email' adicionado
+            'first_name', 'last_name', 'eixo',
             'data_nascimento', 'cidade_nascimento', 'cpf', 'rg', 'orgao', 'data_expedicao',
             'nome_mae', 'nome_pai',
             'telefone', 'endereco_cep', 'endereco_cidade', 'endereco_bairro', 'endereco_rua', 'endereco_numero',
@@ -245,7 +257,7 @@ class ServidorCreateForm(forms.ModelForm):
             self.fields['eixo'].required = False
         
         # 🎯 CORREÇÃO: Esta ordenação agora funciona
-        field_order = ['tipo_usuario', 'eixo', 'first_name', 'last_name', 'email', 'cpf', 'rg']
+        field_order = ['tipo_usuario', 'eixo', 'first_name', 'last_name', 'cpf', 'rg']
         self.order_fields(field_order)
 
     def clean_cpf(self):

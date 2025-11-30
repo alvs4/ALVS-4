@@ -1,0 +1,51 @@
+{% extends 'base3.html' %}
+{% load static %}
+
+{% block main %}
+<main class="login-wrapper d-flex align-items-center justify-content-center flex-grow-1">
+  <div class="login-card shadow-lg p-4">
+    <div class="text-center mb-4">
+      <div class="logo-container">
+        <img src="{% static 'assets/img/ceep.png' %}" alt="Logo CEEP" class="img-fluid" style="max-height: 90px;">
+      </div>
+    </div>
+
+    <h2 class="text-center mb-2 fw-semibold text-primary">Recuperar Senha</h2>
+    <p class="text-center mb-4 text-muted">Digite sua matrícula ou e-mail cadastrado para receber o link de recuperação.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors or form.errors %}
+        <div class="alert alert-danger py-2">
+          {% for error in form.non_field_errors %}
+            {{ error }}
+          {% endfor %}
+          {% for field in form %}
+            {% for error in field.errors %}
+              {{ error }}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="mb-4">
+        <label for="{{ form.identificador.id_for_label }}" class="form-label fw-medium"></label>
+        {{ form.identificador }} <input type="text" class="form-control form-control-lg" id="id_identificador" name="identificador" placeholder="Matrícula ou E-mail" required>
+
+        {% for error in form.identificador.errors %}
+          <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+      
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">Enviar Link</button>
+      </div> 
+      
+      <div class="text-center mt-3">
+        <a href="{% url 'login' %}" class="text-muted">Voltar ao Login</a>
+      </div>
+    </form>
+  </div>
+</main>
+{% endblock main %}

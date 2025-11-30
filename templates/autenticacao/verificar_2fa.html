@@ -1,0 +1,251 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>core</title>
+
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"> 
+<link id="faviconLink" rel="icon" href="{% static 'assets/icon/icone_preto.ico' %}" type="image/x-icon">
+<link rel="stylesheet" href="{% static 'css/style.css' %}" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+
+<style>
+    /* Estilos Globais */
+    body {
+        background: linear-gradient(135deg, #f0f2f5, #e0e4eb); /* Fundo mais suave e moderno */
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh; /* Centraliza verticalmente */
+        margin: 0;
+    }
+
+    /* Container Principal */
+    .verify-container {
+        max-width: 400px;
+        width: 90%;
+        padding: 40px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Sombra mais profunda e suave */
+        animation: fadeIn .6s ease-out;
+        text-align: center;
+    }
+
+    /* Ícone de Verificação */
+    .verify-icon {
+        color: #1a73e8; /* Cor primária */
+        font-size: 40px;
+        margin-bottom: 20px;
+    }
+
+    /* Títulos */
+    .verify-title {
+        font-size: 26px; /* Tamanho maior */
+        font-weight: 700;
+        color: #1d2d50;
+        margin-bottom: 10px;
+    }
+
+    .verify-subtitle {
+        font-size: 16px;
+        color: #6c757d;
+        line-height: 1.5;
+        margin-bottom: 30px;
+    }
+
+    /* Campo de Entrada do Código */
+    .code-input-container {
+        margin-bottom: 25px;
+    }
+
+    .code-input input {
+        font-size: 18px !important;
+        text-align: center;
+        letter-spacing: 2px; /* Mais espaçamento */
+        padding: 16px 10px;
+        font-weight: 600;
+        border-radius: 10px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.3s;
+    }
+
+    .code-input input:focus {
+        border-color: #1a73e8;
+        box-shadow: 0 0 0 0.25rem rgba(26, 115, 232, 0.25);
+    }
+
+    /* Botão de Confirmação */
+    .btn-confirm {
+        padding: 14px; /* Mais preenchimento */
+        font-size: 17px;
+        font-weight: 600;
+        border-radius: 10px;
+        background-color: #1a73e8;
+        border-color: #1a73e8;
+        transition: background-color 0.3s;
+    }
+
+    .btn-confirm:hover {
+        background-color: #1764cc;
+        border-color: #1764cc;
+    }
+
+    /* Link de Reenvio */
+    .resend-box {
+        margin-top: 20px;
+        font-size: 15px;
+        color: #6c757d;
+    }
+
+    .resend-link {
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .resend-link:hover {
+        color: #1764cc !important;
+        text-decoration: underline;
+    }
+
+    /* Estilos do Timer */
+    .resend-disabled {
+        pointer-events: none; /* Desabilita o clique */
+        cursor: default;
+        color: #adb5bd !important;
+        text-decoration: none !important;
+    }
+
+    .timer-text {
+        font-weight: 600;
+        color: #6c757d;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to 	 { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+
+<div class="verify-container">
+    <i class="bi bi-shield-lock verify-icon"></i> 
+
+    <h3 class="verify-title">Verificação em Duas Etapas</h3>
+    <hr>
+    <p class="verify-subtitle">
+        Enviamos um código de acesso de **6 dígitos** para o seu e-mail:<br>
+        <strong style="color:#1a73e8;">{{ request.user.email }}</strong>
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="code-input-container">
+            <div class="code-input mb-3">
+                {{ form.codigo }} 
+            </div>
+        </div>
+        
+        <div class="form-check text-start mb-4">
+            <input type="checkbox" name="lembrar_dispositivo" class="form-check-input" id="rememberDevice">
+            <label for="rememberDevice" class="form-check-label text-muted">
+                Confiar neste dispositivo por 30 dias
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-confirm">
+            <i class="bi bi-check-circle-fill me-2"></i> Confirmar Código
+        </button>
+    </form>
+    
+    <div class="resend-box">
+        <span id="resend-message">
+            <a href="{% url 'reenviar_codigo' %}" class="resend-link text-primary" id="resend-link">
+                Reenviar código
+            </a>
+        </span>
+        <span id="timer-display" style="display: none;">
+            <span class="timer-text">Reenviar em <span id="seconds">30</span>s</span>
+        </span>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const resendLink = document.getElementById("resend-link");
+        const timerDisplay = document.getElementById("timer-display");
+        const secondsSpan = document.getElementById("seconds");
+        const resendMessage = document.getElementById("resend-message");
+
+        // 💡 Melhora: Verifica se já existe um cooldown ativo no armazenamento local (para persistir entre recargas)
+        let cooldown = localStorage.getItem('resendCooldown') ? parseInt(localStorage.getItem('resendCooldown')) : 30;
+        let interval;
+
+        // Função para iniciar ou continuar o timer
+        function startTimer() {
+            // Se o timer já estiver rodando, interrompe o anterior para evitar duplicação
+            if (interval) clearInterval(interval);
+
+            // Esconde o link e mostra o timer
+            resendMessage.style.display = 'none';
+            timerDisplay.style.display = 'inline';
+            secondsSpan.textContent = cooldown;
+
+            interval = setInterval(() => {
+                cooldown--;
+                secondsSpan.textContent = cooldown;
+                localStorage.setItem('resendCooldown', cooldown); // Salva o estado
+
+                if (cooldown <= 0) {
+                    clearInterval(interval);
+                    localStorage.removeItem('resendCooldown'); // Limpa o estado
+                    
+                    // Mostra o link e esconde o timer
+                    resendMessage.style.display = 'inline';
+                    timerDisplay.style.display = 'none';
+                    cooldown = 30; // Reseta para o próximo ciclo
+                }
+            }, 1000);
+        }
+
+        // 💡 Melhora: Se o cooldown for maior que zero ao carregar a página, inicia o timer
+        if (cooldown > 0 && cooldown < 30) {
+            startTimer();
+        } else {
+            // Garante que o estado inicial é o link de reenvio visível
+            resendMessage.style.display = 'inline';
+            timerDisplay.style.display = 'none';
+        }
+
+        // 💡 Melhora: Adiciona um listener ao link para iniciar o timer
+        resendLink.addEventListener("click", function (e) {
+            // Previne o comportamento padrão (navegar) se o timer ainda estiver ativo (apenas como fallback)
+            // Na prática, você deve fazer a requisição de reenvio *antes* de iniciar o timer no frontend.
+            if (cooldown <= 0 || cooldown === 30) {
+                // Aqui você faria a chamada AJAX para o {% url 'reenviar_codigo' %}.
+                // Exemplo: fetch(e.currentTarget.href);
+                startTimer();
+                // Se a requisição for um AJAX e não recarregar a página, a linha acima basta.
+            }
+            // Se a requisição for uma navegação (com o comportamento padrão do link),
+            // a página será recarregada e o bloco 'if (cooldown > 0 && cooldown < 30)' cuidará do timer.
+
+            // Dependendo de como você implementa o reenvio (AJAX ou navegação), talvez você precise:
+            // e.preventDefault();
+        });
+    });
+</script>

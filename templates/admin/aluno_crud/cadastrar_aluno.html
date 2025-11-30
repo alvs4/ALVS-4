@@ -80,7 +80,7 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Órgão Expedidor</label>
-                        {{ form.orgao|add_class:"form-control" }}
+                        {{ form.orgao|add_class:"form-control"|attr:"placeholder:SSP-" }}
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Data de Expedição</label>

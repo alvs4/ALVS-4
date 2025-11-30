@@ -3,85 +3,81 @@
 
 {% block content %}
 <div class="container mt-5">
-    
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0 text-body-emphasis">Servidores</h2>
         <a href="{% url 'cadastrar_servidor' %}" class="btn btn-outline-secondary d-flex align-items-center">
-            <i class="bi bi-person-plus-fill me-2 fs-5"></i>
+            <i class="bi bi-plus-circle-fill me-2 fs-5"></i>
             Novo Servidor
         </a>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle shadow-sm">
-            <thead class="table-secondary text-body-emphasis">
-                <tr>
-                    <th class="coluna-nome">Nome</th>
-                    <th>Especificação</th>
-                    <th class="text-center">Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for servidor in servidores %}
-                <tr class="bg-body"> 
-                    <td class="text-body-emphasis">{{ servidor.get_full_name }}</td>
+    <table class="table table-bordered align-middle shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th class="coluna-nome">Nome</th>
+                <th>Especificação</th>
+                <th class="text-center">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for servidor in servidores %}
+            <tr> <td class="text-body-emphasis">{{ servidor.get_full_name }}</td>
 
-                    <td>
-                        {% if servidor.tipo == 'direcao' %}
-                            <span class="badge text-bg-info">Direção</span>
-                        {% elif servidor.tipo == 'servidor' %}
-                            <span class="badge text-bg-secondary">Administrativo
-                                {% if servidor.eixo %} · {{ servidor.get_eixo_display }}{% endif %}
-                            </span>
-                        {% endif %}
-                    </td>
-                    
-                    <td class="text-center coluna-acoes">
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light dropdown-toggle border" data-bs-toggle="dropdown" aria-expanded="false" title="Ações">
-                                <i class="bi bi-three-dots-vertical text-body"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                <li><a class="dropdown-item" href="{% url 'ver_detalhes_servidor' servidor.id %}">
-                                    <i class="bi bi-eye-fill me-2 text-info"></i>
-                                    Ver Detalhes
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'editar_servidor' servidor.id %}">
-                                    <i class="bi bi-pencil-square me-2 text-warning"></i>
-                                    Editar
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#confirmarRemocao{{ servidor.id }}">
-                                        <i class="bi bi-trash-fill me-2"></i>
-                                        Remover
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3" class="text-center text-body-secondary py-3">Nenhum servidor cadastrado.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                <td>
+                    {% if servidor.tipo == 'direcao' %}
+                        <span class="badge bg-primary">Direção</span> {% elif servidor.tipo == 'servidor' %}
+                        <span class="badge bg-secondary">Administrativo
+                            {% if servidor.eixo %} · {{ servidor.get_eixo_display }}{% endif %}
+                        </span>
+                    {% endif %}
+                </td>
+
+                <td class="text-center">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center justify-content-center" data-bs-toggle="dropdown" style="width: 44px; height: 44px; padding: 0;">
+                            ⋮
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item d-flex align-items-center" href="{% url 'ver_detalhes_servidor' servidor.id %}">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                Ver Detalhes
+                            </a></li>
+                            <li><a class="dropdown-item d-flex align-items-center" href="{% url 'editar_servidor' servidor.id %}">
+                                <i class="bi bi-pencil-square me-2"></i>
+                                Editar
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#confirmarRemocao{{ servidor.id }}">
+                                    <i class="bi bi-trash-fill me-2"></i>
+                                    Remover
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center text-body-secondary">Nenhum servidor cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
     {% for servidor in servidores %}
-      <div class="modal fade" id="confirmarRemocao{{ servidor.id }}" tabindex="-1" aria-labelledby="removerServidorModalLabel{{ servidor.id }}" aria-hidden="true">
+      <div class="modal fade" id="confirmarRemocao{{ servidor.id }}" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content bg-body text-body">
-            <div class="modal-header bg-danger text-white">
-              <h5 class="modal-title" id="removerServidorModalLabel{{ servidor.id }}">Confirmar Remoção</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          <div class="modal-content">
+            <div class="modal-header bg-danger-subtle border-danger border-bottom-1">
+              <h5 class="modal-title text-danger">Confirmar Remoção</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
-              Tem certeza que deseja remover o usuário <strong class="text-body-emphasis">{{ servidor.get_full_name }}</strong>?
+              Tem certeza que deseja remover o usuário <strong>{{ servidor.get_full_name }}</strong>?
             </div>
-            <div class="modal-footer bg-body-tertiary">
+            <div class="modal-footer">
               <form method="post" action="{% url 'remover_servidor' servidor.id %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-danger">Sim, remover</button>

@@ -1,0 +1,32 @@
+{% extends "base_email.html" %}
+
+{% block content %}
+
+<p style="font-size: 15px; color: #555;">
+    Você solicitou um novo código de verificação para acessar sua conta no 
+    <strong>ALVS-4</strong>.
+</p>
+
+<p style="font-size: 16px; font-weight: bold; color: #1a73e8; text-align: center; margin: 25px 0;">
+    Seu novo código é:
+</p>
+
+<div style="text-align: center; margin-bottom: 25px;">
+    <span style="
+        display: inline-block;
+        background: #1a73e8;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 6px;
+        font-size: 22px;
+        letter-spacing: 3px;
+    ">
+        {{ codigo }}
+    </span>
+</div>
+
+<p style="font-size: 14px; color: #777; text-align: center;">
+    Este código expira em <strong>5 minutos</strong>.
+</p>
+
+{% endblock %}

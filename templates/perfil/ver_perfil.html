@@ -126,6 +126,7 @@
             </div> 
             
             <div class="mt-4 d-flex justify-content-start gap-2">
+
                 {% if user.tipo == 'admin' %}
                     <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
                         <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
@@ -141,7 +142,6 @@
                         <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
                         Voltar
                     </a>
-                
                 {% elif user.tipo == 'servidor' or user.tipo == 'direcao' %}
                     <a href="{% url 'servidor_dashboard' %}" class="btn btn-secondary">
                         <img src="{%static 'assets/img/voltar.png'%}" width='20px' height='20px' class="me-2">
@@ -149,13 +149,29 @@
                     </a>
                 {% endif %}
 
-                {% if user.tipo == 'professor' or user.tipo == 'aluno' or user.tipo == 'servidor' or user.tipo == 'direcao' %}
-                    <a href="{% url 'alterar_senha' %}" class="btn btn-primary">
-                        Alterar Senha
+                {% if user.tipo in 'professor aluno servidor direcao' %}
+                    {% if not user.email %}
+                        <a href="{% url 'inserir_email' %}" class="btn btn-primary">
+                            Adicionar e-mail
+                        </a>
+                    {% elif not user.email_confirmado %}
+                        <a href="{% url 'inserir_email' %}" class="btn btn-primary">
+                            Confirmar e-mail
+                        </a>
+                    {% else %}
+                        <a href="{% url 'alterar_senha' %}" class="btn btn-primary">
+                            Alterar Senha
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                {% if user.tipo != 'admin' %}
+                    <a href="{% url 'configurar_autenticador' %}" class="btn btn-primary">
+                        Configurar Google Authenticator
                     </a>
                 {% endif %}
+
             </div>
-            
         </div>
     </div>
 {% endblock content %}

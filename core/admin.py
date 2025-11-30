@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import (
     CustomUser, Curso, Turma, Materia, 
-    ProfessorMateriaAnoCursoModalidade, AlunoTurma, 
-    Nota, Estagio, DocumentoEstagio
+    ProfessorMateriaAnoCursoModalidade, AlunoTurma,
+    Estagio, DocumentoEstagio
 )
 
 # --- Configurações para melhorar a exibição no Admin ---
@@ -13,21 +13,34 @@ class CustomUserAdmin(UserAdmin):
     Personaliza a exibição do CustomUser no Admin.
     """
     model = CustomUser
+
     # Campos que aparecem na lista de usuários
-    list_display = ['username', 'email', 'first_name', 'last_name', 'tipo']
-    # Filtros que aparecem na lateral
-    list_filter = ['tipo', 'eixo', 'is_staff']
-    # Campos que o Admin pode usar para buscar
+    list_display = ['username', 'email', 'first_name', 'last_name', 'tipo', 
+                    'email_confirmado', 'dois_fatores_email', 'usa_google_authenticator']
+
+    # Filtros
+    list_filter = ['tipo', 'eixo', 'email_confirmado', 'dois_fatores_email', 'usa_google_authenticator']
+
     search_fields = ['username', 'first_name', 'last_name', 'email']
-    
-    # Adiciona os campos 'tipo', 'eixo', etc., na tela de edição do usuário
-    # (Isto é importante para o Admin poder ver e editar tudo)
+
     fieldsets = UserAdmin.fieldsets + (
         ('Informações Customizadas', {
-            'fields': ('tipo', 'eixo', 'numero_matricula', 'cpf', 'rg', 
-                       'data_nascimento', 'telefone')
+            'fields': (
+                'tipo', 'eixo', 'numero_matricula', 'cpf', 'rg',
+                'data_nascimento', 'telefone',
+            )
+        }),
+        ('Segurança e 2FA', {
+            'fields': (
+                'email_confirmado',
+                'dois_fatores_email',
+                'usa_google_authenticator',
+                'secret_2fa',
+            )
         }),
     )
+
+    readonly_fields = ['secret_2fa']  # evita que seja alterado manualmente
 
 class EstagioAdmin(admin.ModelAdmin):
     """
@@ -63,6 +76,5 @@ admin.site.register(Turma, TurmaAdmin)
 admin.site.register(Materia)
 admin.site.register(ProfessorMateriaAnoCursoModalidade)
 admin.site.register(AlunoTurma, AlunoTurmaAdmin)
-admin.site.register(Nota)
 admin.site.register(Estagio, EstagioAdmin) # <-- O mais importante para você agora
 admin.site.register(DocumentoEstagio)

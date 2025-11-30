@@ -1,0 +1,31 @@
+{% extends "base_email.html" %}
+
+{% block content %}
+
+<p style="font-size: 15px; color: #555;">
+    Olá! Obrigado por cadastrar seu e-mail no <strong>ALVS-4</strong>.
+    Para concluir o processo, confirme seu endereço clicando no botão abaixo:
+</p>
+
+<div style="text-align: center; margin: 25px 0;">
+    <a href="{{ link }}" style="
+        background: #1a73e8;
+        color: white;
+        padding: 12px 25px;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 16px;
+    ">
+        Confirmar E-mail
+    </a>
+</div>
+
+<p style="font-size: 13px; color: #777;">
+    Se o botão não funcionar, copie e cole o link abaixo no seu navegador:
+</p>
+
+<p style="font-size: 13px; word-break: break-all; color: #1a73e8;">
+    {{ link }}
+</p>
+
+{% endblock %}

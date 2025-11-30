@@ -3,8 +3,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 import datetime
+from datetime import date
 from core.decorators import role_required
-from core.models import Nota, Estagio, DocumentoEstagio
+from core.models import Estagio, DocumentoEstagio
 from autenticacao.forms import TermoCompromissoForm, FichaIdentificacaoForm, FichaPessoalForm
 
 # === DASHBOARD ===
@@ -13,15 +14,25 @@ from autenticacao.forms import TermoCompromissoForm, FichaIdentificacaoForm, Fic
 @role_required('aluno')
 def aluno_dashboard_view(request):
     aluno = request.user
-    notas = Nota.objects.filter(aluno=aluno).select_related('materia', 'turma')
 
     return render(request, 'aluno/aluno_dashboard.html', {
-        'notas': notas,
         'aluno': aluno
     })
 
 
 # === ESTÁGIO ===
+
+def is_menor_de_idade(data_nascimento):
+    """Verifica se o aluno é menor de 18 anos."""
+    if not data_nascimento:
+        return True # Se não tiver data, por segurança, consideramos menor (ou exija o preenchimento)
+    
+    today = date.today()
+    # Calcula a idade: ano atual - ano de nascimento - (1 se aniversário deste ano ainda não ocorreu)
+    age = today.year - data_nascimento.year - \
+        ((today.month, today.day) < (data_nascimento.month, data_nascimento.day))
+    
+    return age < 18
 
 
 @login_required
@@ -197,6 +208,9 @@ def visualizar_documento_estagio(request, documento_id):
         except Exception:
             pdf_existe = False 
 
+    aluno = request.user
+    is_menor = is_menor_de_idade(request.user.data_nascimento)
+    
     context = {
         'documento': documento,
         'aluno': request.user,
@@ -205,6 +219,7 @@ def visualizar_documento_estagio(request, documento_id):
         'dados_termo': dados_termo, # Envia dados do Termo
         'dados_reais': dados_reais, # Envia dados da Ficha (Datas reais e Horas)
         'pdf_existe': pdf_existe,
+        'is_menor': is_menor,
     }
 
     return render(request, template_name, context)
@@ -277,6 +292,7 @@ def remover_pdf_assinado(request, documento_id):
 
     return redirect('visualizar_documento_estagio', documento_id=documento.id)
 
+
 @login_required
 @role_required('aluno')
 def assinar_documento_aluno(request, documento_id):
@@ -285,122 +301,148 @@ def assinar_documento_aluno(request, documento_id):
         return redirect('detalhes_estagio_aluno')
 
     documento = get_object_or_404(DocumentoEstagio, id=documento_id, estagio__aluno=request.user)
-    
-    # Verifica se o status permite assinatura
+    aluno = request.user
+
+    # -------------------------------------------------------------
+    # 1. RESTRIÇÃO SOMENTE PARA TERMO DE COMPROMISSO (menor de idade)
+    # -------------------------------------------------------------
+    if documento.tipo_documento == 'TERMO_COMPROMISISSO':
+        if is_menor_de_idade(aluno.data_nascimento):
+            messages.error(
+                request,
+                "Alunos menores de idade NÃO podem usar a Assinatura Eletrônica no Termo de Compromisso. "
+                "Por favor, anexe o PDF assinado pelo responsável e clique em 'Encaminhar ao Professor'."
+            )
+            return redirect('visualizar_documento_estagio', documento_id=documento.id)
+
+        # Maior de idade: validar se o PDF do supervisor está anexado
+        if not documento.pdf_supervisor_assinado:
+            messages.error(
+                request,
+                "Você deve anexar o PDF do Termo assinado pelo Supervisor antes de assinar eletronicamente."
+            )
+            return redirect('visualizar_documento_estagio', documento_id=documento.id)
+
+    # -------------------------------------------------------------
+    # 2. CONFERIR STATUS PERMITIDO PARA ASSINAR
+    # -------------------------------------------------------------
     if documento.status not in ['RASCUNHO', 'REPROVADO']:
-        messages.error(request, "Este documento não está (ou não está mais) aguardando sua ação.")
+        messages.error(request, "Este documento não está aguardando sua assinatura.")
         return redirect('visualizar_documento_estagio', documento_id=documento.id)
 
-    # ==============================================================================
-    # BARREIRA DE VALIDAÇÃO: Impede assinar documentos incompletos
-    # ==============================================================================
-    
+    # -------------------------------------------------------------
+    # 3. VALIDAÇÕES ESPECÍFICAS PARA O TERMO DE COMPROMISSO
+    # -------------------------------------------------------------
     dados = documento.dados_formulario or {}
-    erros_validacao = []
+    erros = []
 
-    # 1. Validação do TERMO DE COMPROMISSO
     if documento.tipo_documento == 'TERMO_COMPROMISSO':
-        # Lista de campos que NÃO podem estar vazios na hora de assinar
         campos_obrigatorios = [
             'concedente_nome', 'concedente_cnpj', 'concedente_rua', 'concedente_numero',
-            'concedente_bairro', 'concedente_cidade_uf', 'concedente_cep', 'concedente_telefone',
-            'concedente_representante', 'concedente_email', 'supervisor_nome',
-            'data_inicio', 'data_fim', 'carga_horaria_diaria', 'carga_horaria_semanal',
-            'apolice_numero', 'apolice_empresa'
+            'concedente_bairro', 'concedente_cidade_uf', 'concedente_cep',
+            'concedente_telefone', 'concedente_representante', 'concedente_email',
+            'supervisor_nome', 'data_inicio', 'data_fim', 'carga_horaria_diaria',
+            'carga_horaria_semanal', 'apolice_numero', 'apolice_empresa'
         ]
-        
-        # Verifica se algum campo do formulário está vazio
+
         for campo in campos_obrigatorios:
             if not dados.get(campo):
-                erros_validacao.append("Existem campos obrigatórios não preenchidos no formulário.")
-                break # Para no primeiro erro para não encher a tela de mensagens
-        
-        # Verifica se o Orientador foi selecionado (Campo do Model, não do JSON)
+                erros.append("Há campos obrigatórios não preenchidos no Termo.")
+                break
+
         if not documento.estagio.orientador:
-            erros_validacao.append("Você precisa selecionar um Professor Orientador na edição.")
+            erros.append("Você precisa selecionar o Professor Orientador antes de assinar.")
 
-    # 2. Validação da FICHA PESSOAL
-    elif documento.tipo_documento == 'FICHA_PESSOAL':
-        # Verifica se existe pelo menos uma atividade preenchida
-        atividades = dados.get('atividades_lista', [])
-        if not atividades:
-            erros_validacao.append("O Quadro de Atividades está vazio. Adicione pelo menos uma atividade.")
-        else:
-            # Verifica se a primeira linha tem conteúdo real (data ou descrição)
-            primeira_linha = atividades[0]
-            tem_conteudo = primeira_linha.get('data') or primeira_linha.get('atividade')
-            if not tem_conteudo:
-                 erros_validacao.append("O Quadro de Atividades parece estar em branco. Preencha as atividades realizadas.")
-
-    # --- 3. Validação da FICHA DE IDENTIFICAÇÃO ---
-    elif documento.tipo_documento == 'FICHA_IDENTIFICACAO':
-        # Foto é obrigatória
-        if not documento.foto_3x4:
-            erros_validacao.append("É obrigatório anexar uma Foto 3x4 antes de assinar.")
-        
-        # Se marcou atividade, valida TODOS os dados da empresa
-        tipo_atividade = dados.get('atividade_tipo')
-        if tipo_atividade in ['AUTONOMO', 'EMPREGADO']:
-            # Lista de campos que não podem faltar se tiver atividade
-            campos_extra = [
-                'atividade_empresa', 
-                'atividade_funcao', 
-                'atividade_carga_horaria', 
-                'atividade_rua',
-                'atividade_numero',
-                'atividade_bairro',
-                'atividade_cidade',
-                'atividade_cep'
-            ]
-            
-            campos_faltantes = []
-            for campo in campos_extra:
-                if not dados.get(campo):
-                    # Adiciona o nome legível do campo para avisar o aluno
-                    nome_legivel = campo.replace('atividade_', '').replace('_', ' ').title()
-                    campos_faltantes.append(nome_legivel)
-            
-            if campos_faltantes:
-                lista_campos = ", ".join(campos_faltantes)
-                erros_validacao.append(f"Como informou ser {tipo_atividade.lower()}, preencha: {lista_campos}.")
-                
-    elif documento.tipo_documento == 'AVALIACAO_ORIENTADOR':
-        pass
-
-    # SE HOUVER ERROS, CANCELA A ASSINATURA E MOSTRA AVISO
-    if erros_validacao:
-        for erro in erros_validacao:
-            messages.error(request, f"Não foi possível assinar: {erro}")
+    if erros:
+        for erro in erros:
+            messages.error(request, erro)
         return redirect('visualizar_documento_estagio', documento_id=documento.id)
-    
-    # ==============================================================================
-    # FIM DA VALIDAÇÃO - Se chegou aqui, pode assinar
-    # ==============================================================================
 
+    # -------------------------------------------------------------
+    # 4. REALIZAR ASSINATURA DO ALUNO
+    # -------------------------------------------------------------
     documento.assinado_aluno_em = now()
-    documento.assinado_por_aluno = request.user 
+    documento.assinado_por_aluno = aluno
     tipo = documento.tipo_documento
-    
-    # Define o próximo status baseado no tipo de documento
-    if tipo == 'TERMO_COMPROMISSO' or tipo == 'FICHA_PESSOAL':
-        # Estes vão para o Professor Orientador
+
+    # -------------------------------------------------------------
+    # 5. DEFINIR PRÓXIMO STATUS
+    # -------------------------------------------------------------
+    if tipo == 'TERMO_COMPROMISSO':
+        # Maior de idade → assina e já encaminha automaticamente
         documento.status = 'AGUARDANDO_ASSINATURA_PROF'
-        
-    elif tipo in ['FICHA_IDENTIFICACAO', 'AVALIACAO_SUPERVISOR', 'COMP_RESIDENCIA', 
-                  'COMP_AGUA_LUZ', 'ID_CARD', 'SUS_CARD', 'VACINA_CARD', 'APOLICE_SEGURO']:
-        # Estes vão direto para a Secretaria/Direção
-        documento.status = 'AGUARDANDO_VERIFICACAO_ADMIN'
+
+    elif tipo == 'FICHA_PESSOAL':
+        documento.status = 'AGUARDANDO_ASSINATURA_PROF'
+
     else:
-        pass 
+        documento.status = 'AGUARDANDO_VERIFICACAO_ADMIN'
 
     documento.save()
-    
-    # Atualiza o status geral do estágio se for o primeiro envio
-    if documento.estagio.status_geral == 'RASCUNHO_ALUNO' or documento.estagio.status_geral == 'PENDENTE_CORRECAO':
+
+    # -------------------------------------------------------------
+    # 6. ATUALIZA STATUS GERAL DO ESTÁGIO
+    # -------------------------------------------------------------
+    if documento.estagio.status_geral in ['RASCUNHO_ALUNO', 'PENDENTE_CORRECAO']:
         documento.estagio.status_geral = 'EM_ANDAMENTO'
         documento.estagio.save()
-    
+
     messages.success(request, "Documento assinado e encaminhado para a próxima etapa!")
+    return redirect('visualizar_documento_estagio', documento_id=documento.id)
+
+
+@login_required
+@role_required('aluno')
+def encaminhar_documento_aluno(request, documento_id):
+    if request.method != 'POST':
+        messages.error(request, "Ação inválida.")
+        return redirect('detalhes_estagio_aluno')
+
+    documento = get_object_or_404(DocumentoEstagio, id=documento_id, estagio__aluno=request.user)
+    
+    if documento.status not in ['RASCUNHO', 'REPROVADO']:
+        messages.error(request, "Este documento não está em rascunho ou reprovado, e não pode ser encaminhado.")
+        return redirect('visualizar_documento_estagio', documento_id=documento.id)
+
+    # 1. VALIDAÇÃO ESPECÍFICA PARA O TERMO
+    if documento.tipo_documento == 'TERMO_COMPROMISSO':
+        if not documento.estagio.orientador:
+            messages.error(request, "Você precisa selecionar um Professor Orientador no formulário antes de encaminhar.")
+            return redirect('visualizar_documento_estagio', documento_id=documento.id)
+        
+        # O aluno menor de idade SÓ PODE encaminhar se o PDF assinado estiver anexado.
+        if not documento.pdf_supervisor_assinado:
+            messages.error(request, "Você deve anexar o PDF do Termo de Compromisso assinado pelo Supervisor (ou Responsável) antes de encaminhar.")
+            return redirect('visualizar_documento_estagio', documento_id=documento.id)
+
+    # 2. LÓGICA DE ENCAMINHAMENTO COM TRATAMENTO DE ERRO
+    try:
+        # Marca a data da ação do aluno (Encaminhamento)
+        # Assumindo que usa assinado_aluno_em para a data da ação do aluno.
+        documento.data_encaminhamento_aluno = now()
+
+        # Define o próximo status
+        if documento.tipo_documento in ['TERMO_COMPROMISSO', 'FICHA_PESSOAL']:
+            documento.status = 'AGUARDANDO_ASSINATURA_PROF'
+        elif documento.tipo_documento in ['FICHA_IDENTIFICACAO', 'AVALIACAO_SUPERVISOR', 'COMP_RESIDENCIA', 
+                                         'COMP_AGUA_LUZ', 'ID_CARD', 'SUS_CARD', 'VACINA_CARD', 'APOLICE_SEGURO']:
+            documento.status = 'AGUARDANDO_VERIFICACAO_ADMIN'
+        else:
+            documento.status = 'AGUARDANDO_VERIFICACAO_ADMIN'
+        
+        documento.save()
+        
+        # Atualiza o status geral do estágio se for o primeiro envio
+        if documento.estagio.status_geral in ['RASCUNHO_ALUNO', 'PENDENTE_CORRECAO']:
+            documento.estagio.status_geral = 'EM_ANDAMENTO'
+            documento.estagio.save()
+
+        messages.success(request, f"Documento '{documento.get_tipo_documento_display()}' encaminhado para a próxima etapa!")
+    
+    except Exception as e:
+        # Se ocorrer um erro no save, a mensagem será exibida.
+        messages.error(request, f"Erro inesperado ao encaminhar o documento. Detalhe: {e}")
+        
     return redirect('visualizar_documento_estagio', documento_id=documento.id)
 
 

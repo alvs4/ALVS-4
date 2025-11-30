@@ -12,7 +12,6 @@ from core.models import (
     Materia,
     Turma,
     CustomUser,
-    Nota
 )
 
 # === DASHBOARD ===
@@ -109,10 +108,9 @@ def detalhar_turma_professor(request, materia_id, turma_id):
         return redirect('professor_dashboard')
 
     alunos = CustomUser.objects.filter(tipo='aluno', alunoturma__turma=turma).distinct()
-    notas_dict = {nota.aluno.id: nota for nota in Nota.objects.filter(materia=materia, turma=turma)}
     
     context = {
-        'materia': materia, 'turma': turma, 'alunos': alunos, 'notas_dict': notas_dict
+        'materia': materia, 'turma': turma, 'alunos': alunos,
     }
     return render(request, 'professor/lescionação/detalhar_turma.html', context)
     
@@ -127,13 +125,11 @@ def ver_turma_professor(request, materia_id, turma_id):
         return redirect('professor_dashboard')
 
     alunos = CustomUser.objects.filter(tipo='aluno', alunoturma__turma=turma).distinct()
-    notas_dict = {nota.aluno_id: nota for nota in Nota.objects.filter(materia=materia, turma=turma)}
 
     return render(request, 'professor/lescionação/detalhar_turma.html', {
         'materia': materia,
         'turma': turma,
         'alunos': alunos,
-        'notas_dict': notas_dict
     })
 
 @login_required

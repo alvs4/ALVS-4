@@ -1,0 +1,82 @@
+{% extends 'base3.html' %}
+{% load static %}
+
+{% block main %}
+<main class="login-wrapper d-flex align-items-center justify-content-center flex-grow-1">
+  <div class="login-card shadow-lg p-4 text-center">
+    <div class="text-center mb-4">
+      <div class="logo-container">
+        <img src="{% static 'assets/img/ceep.png' %}" alt="Logo CEEP" class="img-fluid" style="max-height: 90px;">
+      </div>
+    </div>
+
+    <h2 class="text-center mb-4 fw-semibold text-primary">Verificação de Acesso (2FA)</h2>
+    <p class="text-center mb-4 text-muted">
+        Digite o código de 6 dígitos gerado pelo seu aplicativo **Google Authenticator** ou similar.
+    </p>
+
+    <form method="POST" novalidate>
+      {% csrf_token %}
+      
+      {% if form.non_field_errors or form.errors %}
+        <div class="alert alert-danger py-2">
+          {% for error in form.non_field_errors %}
+            {{ error }}
+          {% endfor %}
+          {% for field in form %}
+            {% for error in field.errors %}
+              {{ error }}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% elif error_message %}
+        <div class="alert alert-danger py-2">
+            {{ error_message }}
+        </div>
+      {% endif %}
+
+      <div class="mb-4">
+        <label for="id_codigo" class="form-label fw-medium visually-hidden">Código de 6 dígitos</label>
+        
+        <input 
+          type="text" 
+          name="codigo" 
+          id="id_codigo" 
+          class="form-control form-control-lg text-center fw-bold" 
+          placeholder="000000" 
+          maxlength="6"
+          inputmode="numeric" 
+          pattern="\d{6}"
+          autocomplete="one-time-code"
+          required
+        >
+        
+        {% for error in form.codigo.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+        
+        <small class="form-text text-muted mt-2 d-block">O código muda a cada 30 segundos.</small>
+      </div>
+
+      <div class="form-check text-start mb-4">
+            <input type="checkbox" name="lembrar_dispositivo" class="form-check-input" id="rememberDevice">
+            <label for="rememberDevice" class="form-check-label text-muted">
+                Confiar neste dispositivo por 30 dias
+            </label>
+        </div>
+      
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+          Confirmar Código
+        </button>
+      </div>
+    </form>
+    
+    <hr class="my-4">
+
+    <a href="{% url 'escolher_metodo_2fa' %}" class="text-muted text-decoration-none">
+        Tentar outro método de verificação
+    </a>
+  </div>
+</main>
+{% endblock main %}

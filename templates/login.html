@@ -6,7 +6,7 @@
   <div class="login-card shadow-lg p-4">
     <div class="text-center mb-4">
       <div class="logo-container">
-        <img src="{% static 'assets/img/ceep.png' %}" alt="Logo CEEP" class="img-fluid" style="max-height: 90px;">
+        <img src="{% static 'assets/img/ceep3.png' %}" alt="Logo CEEP" class="img-fluid" style="max-height: 90px;">
       </div>
     </div>
 
@@ -55,7 +55,8 @@
 
       <div class="d-grid gap-2">
         <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
-      </div>
+        <a href="{% url 'recuperar_senha' %}" class="btn btn-link w-100 mt-3">Esqueci minha senha</a>
+      </div> 
     </form>
   </div>
 </main>

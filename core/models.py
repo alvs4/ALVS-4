@@ -55,6 +55,19 @@ class CustomUser(AbstractUser):
     telefone = models.CharField(max_length=15, blank=True, null=True)
 
     senha_temporaria = models.BooleanField(default=False)
+    email = models.EmailField(blank=True, null=True)
+    email_confirmado = models.BooleanField(default=False)
+    token_confirmacao_email = models.CharField(max_length=64, blank=True, null=True)
+    token_recuperacao_senha = models.CharField(max_length=255, null=True, blank=True)
+    token_recuperacao_expira = models.DateTimeField(null=True, blank=True)
+    dois_fatores_email = models.BooleanField(default=True)
+    codigo_2fa = models.CharField(max_length=6, null=True, blank=True)
+    codigo_2fa_expira = models.DateTimeField(null=True, blank=True)
+    tentativas_2fa = models.IntegerField(default=0)
+    lembrar_dispositivo_token = models.CharField(max_length=64, null=True, blank=True)
+    lembrar_dispositivo_expira = models.DateTimeField(null=True, blank=True)
+    secret_2fa = models.CharField(max_length=32, null=True, blank=True)
+    usa_google_authenticator = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.numero_matricula:
@@ -230,47 +243,6 @@ class AlunoTurma(models.Model):
         return f"{self.aluno.get_full_name()} - {self.turma}"
 
 
-class Nota(models.Model):
-    # (Seu modelo Nota está perfeito, sem alterações)
-    aluno = models.ForeignKey(CustomUser, on_delete=models.CASCADE, limit_choices_to={'tipo': 'aluno'})
-    materia = models.ForeignKey(Materia, on_delete=models.CASCADE)
-    turma = models.ForeignKey(Turma, on_delete=models.CASCADE)
-
-    nota_1 = models.FloatField(null=True, blank=True)
-    nota_2 = models.FloatField(null=True, blank=True)
-    nota_3 = models.FloatField(null=True, blank=True)
-    nota_recuperacao = models.FloatField(null=True, blank=True)
-    media_final = models.FloatField(null=True, blank=True)
-    status_final = models.CharField(max_length=30, blank=True)
-
-    def calcular_media(self):
-        notas = [self.nota_1, self.nota_2, self.nota_3]
-        notas_validas = [n for n in notas if n is not None]
-        if not notas_validas:
-            return None
-        return sum(notas_validas) / len(notas_validas)
-
-    def calcular_status(self):
-        media = self.calcular_media()
-        if media is None:
-            return "Pendente"
-        if media >= 5:
-            return "Aprovado"
-        elif self.nota_recuperacao is not None:
-            final = (media + self.nota_recuperacao) / 2
-            return "Aprovado" if final >= 5 else "Reprovado na Final"
-        else:
-            return "Reprovado"
-
-    def save(self, *args, **kwargs):
-        self.media_final = self.calcular_media()
-        self.status_final = self.calcular_status()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.aluno.get_full_name()} - {self.materia.nome} - {self.status_final}"
-
-
 class Estagio(models.Model):
     # (Seu modelo Estagio está perfeito, sem alterações)
     STATUS_GERAL_CHOICES = [
@@ -343,6 +315,7 @@ class DocumentoEstagio(models.Model):
     )
 
     assinado_aluno_em = models.DateTimeField(null=True, blank=True)
+    data_encaminhamento_aluno = models.DateTimeField(null=True, blank=True)
     assinado_orientador_em = models.DateTimeField(null=True, blank=True)
     assinado_diretor_em = models.DateTimeField(null=True, blank=True)
     

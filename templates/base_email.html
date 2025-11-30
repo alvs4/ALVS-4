@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+</head>
+
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 30px;">
+
+    <div style="
+        max-width: 500px;
+        margin: auto;
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    ">
+        
+        <!-- TÍTULO -->
+        {% block title %}
+        <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">
+            {{ titulo }}
+        </h2>
+        {% endblock %}
+
+        <!-- CORPO DO E-MAIL -->
+        {% block content %}
+        {% endblock %}
+
+        <hr style="margin: 25px 0;">
+
+        <!-- RODAPÉ -->
+        <p style="text-align: center; font-size: 12px; color: #aaa;">
+            ALVS-4 — Ordem Tecnológica na Desordem Mecânica<br>
+            Mensagem automática — não responda.
+        </p>
+
+    </div>
+
+</body>
+</html>

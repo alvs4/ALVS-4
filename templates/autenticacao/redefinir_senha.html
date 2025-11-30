@@ -1,0 +1,80 @@
+{% extends 'base3.html' %}
+{% load static %}
+
+{% block main %}
+<main class="login-wrapper d-flex align-items-center justify-content-center flex-grow-1">
+  <div class="login-card shadow-lg p-4">
+    <div class="text-center mb-4">
+      <div class="logo-container">
+        <img src="{% static 'assets/img/ceep.png' %}" alt="Logo CEEP" class="img-fluid" style="max-height: 90px;">
+      </div>
+    </div>
+
+    <h2 class="text-center mb-4 fw-semibold text-primary">Redefinir Senha</h2>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label for="senha1_input" class="form-label fw-medium">Nova Senha</label>
+        <div class="input-group input-group-lg">
+          <input type="password" name="senha1" id="senha1_input" class="form-control" placeholder="Nova senha" required>
+          
+          <button id="togglePasswordButton1" class="btn btn-outline-secondary" type="button">
+            <img id="togglePasswordIcon1"
+              src="{% static 'assets/img/senha_oculta.png' %}"
+              data-show="{% static 'assets/img/senha_mostra.png' %}"
+              data-hide="{% static 'assets/img/senha_oculta.png' %}"
+              alt="Alternar Senha" style="width: 22px; height: 22px;">
+          </button>
+        </div>
+        </div>
+
+      <div class="mb-4">
+        <label for="senha2_input" class="form-label fw-medium">Repita a Nova Senha</label>
+        <div class="input-group input-group-lg">
+          <input type="password" name="senha2" id="senha2_input" class="form-control" placeholder="Repita a nova senha" required>
+
+          <button id="togglePasswordButton2" class="btn btn-outline-secondary" type="button">
+            <img id="togglePasswordIcon2"
+              src="{% static 'assets/img/senha_oculta.png' %}"
+              data-show="{% static 'assets/img/senha_mostra.png' %}"
+              data-hide="{% static 'assets/img/senha_oculta.png' %}"
+              alt="Alternar Senha" style="width: 22px; height: 22px;">
+          </button>
+        </div>
+        </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg">Salvar</button>
+      </div> 
+    </form>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Função genérica para adicionar o toggle a um campo de senha
+    function setupPasswordToggle(passwordInputId, toggleButtonId, toggleIconId) {
+        const passwordInput = document.getElementById(passwordInputId);
+        const toggleButton = document.getElementById(toggleButtonId);
+        const toggleIcon = document.getElementById(toggleIconId);
+
+        if (passwordInput && toggleButton && toggleIcon) {
+            toggleButton.addEventListener("click", function () {
+                const isPassword = passwordInput.type === "password";
+                passwordInput.type = isPassword ? "text" : "password";
+                toggleIcon.src = isPassword
+                    ? toggleIcon.dataset.show // Mostra a senha (Show icon)
+                    : toggleIcon.dataset.hide; // Oculta a senha (Hide icon)
+            });
+        }
+    }
+
+    // Aplica a função para o primeiro campo
+    setupPasswordToggle("senha1_input", "togglePasswordButton1", "togglePasswordIcon1");
+    // Aplica a função para o segundo campo
+    setupPasswordToggle("senha2_input", "togglePasswordButton2", "togglePasswordIcon2");
+});
+</script>
+{% endblock main %}

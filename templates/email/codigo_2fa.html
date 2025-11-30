@@ -1,0 +1,27 @@
+{% extends "base_email.html" %}
+
+{% block content %}
+
+<p style="font-size: 15px; color: #555;">
+    Seu <strong>código de verificação</strong> é:
+</p>
+
+<div style="
+    background: #1a73e8;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    border-radius: 6px;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    margin: 25px 0;
+">
+    {{ codigo }}
+</div>
+
+<p style="font-size: 15px; color: #555;">
+    Ele expira em <strong>5 minutos</strong>.
+</p>
+
+{% endblock %}
